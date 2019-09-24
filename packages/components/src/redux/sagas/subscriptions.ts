@@ -41,7 +41,10 @@ import {
   mergeNotificationsPreservingEnhancement,
 } from '@devhub/core'
 
+import { AppState, InteractionManager } from 'react-native'
+import { Browser } from '../../libs/browser'
 import { bugsnag } from '../../libs/bugsnag'
+import { emitter } from '../../libs/emitter'
 import {
   getActivity,
   getIssuesOrPullRequests,
@@ -67,17 +70,18 @@ function* init() {
     const { action } = yield race({
       delay: delay(_isFirstTime ? 0 : 10 * 1000),
       action: take([
-        'LOGIN_SUCCESS',
         'LOGIN_FAILURE',
+        'LOGIN_SUCCESS',
         'LOGOUT',
-        'REPLACE_COLUMNS_AND_SUBSCRIPTIONS',
         'REFRESH_INSTALLATIONS_SUCCESS',
+        'REPLACE_COLUMNS_AND_SUBSCRIPTIONS',
       ]),
     })
 
     const forceFetchAll = !!(
-      (action && action.type === 'REFRESH_INSTALLATIONS_SUCCESS') ||
-      (_isFirstTime && initialAction.type === 'REFRESH_INSTALLATIONS_SUCCESS')
+      (_isFirstTime &&
+        initialAction.type === 'REFRESH_INSTALLATIONS_SUCCESS') ||
+      (action && action.type === 'REFRESH_INSTALLATIONS_SUCCESS')
     )
 
     const isFirstTime = _isFirstTime
@@ -97,7 +101,7 @@ function* init() {
     const isLogged = selectors.isLoggedSelector(state)
     if (!isLogged) continue
 
-    const subscriptions = selectors.subscriptionsArrSelector(state)
+    const subscriptions = selectors.allSubscriptionsArrSelector(state)
     if (!(subscriptions && subscriptions.length)) continue
 
     const github = selectors.githubAPIHeadersSelector(state)
@@ -169,6 +173,9 @@ function* init() {
 }
 
 function* cleanupSubscriptions() {
+  if (AppState.currentState === 'active')
+    yield call(InteractionManager.runAfterInteractions)
+
   const allSubscriptionIds: string[] = yield select(
     selectors.subscriptionIdsSelector,
   )
@@ -195,11 +202,47 @@ function* cleanupSubscriptions() {
   yield put(actions.deleteColumnSubscriptions(unusedSubscriptionIds))
 }
 
+function* handleOpenItem(
+  action: ExtractActionFromActionCreator<typeof actions.openItem>,
+) {
+  if (action.payload.link) Browser.openURLOnNewTab(action.payload.link)
+
+  if (AppState.currentState === 'active')
+    yield call(InteractionManager.runAfterInteractions)
+
+  if (action.payload.itemId) {
+    yield put(
+      actions.markItemsAsReadOrUnread({
+        type: action.payload.columnType,
+        itemIds: [action.payload.itemId],
+        localOnly: true,
+        unread: false,
+      }),
+    )
+  }
+
+  if (action.payload.columnId) {
+    emitter.emit('FOCUS_ON_COLUMN', {
+      columnId: action.payload.columnId,
+      scrollTo: true,
+    })
+
+    emitter.emit('FOCUS_ON_COLUMN_ITEM', {
+      columnId: action.payload.columnId,
+      itemId: action.payload.itemId,
+      scrollTo: true,
+    })
+  }
+}
+
 function* onAddColumn(
   action: ExtractActionFromActionCreator<
     typeof actions.addColumnAndSubscriptions
   >,
 ) {
+  if (AppState.currentState === 'active')
+    yield call(InteractionManager.runAfterInteractions)
+
   const state = yield select()
 
   const column = selectors.columnSelector(state, action.payload.column.id)
@@ -488,6 +531,9 @@ function* onFetchRequest(
 
     const githubAPIHeaders = getGitHubAPIHeadersFromHeader(headers)
 
+    if (AppState.currentState === 'active')
+      yield call(InteractionManager.runAfterInteractions)
+
     yield put(
       actions.fetchSubscriptionSuccess({
         subscriptionType,
@@ -670,6 +716,7 @@ export function* subscriptionsSagas() {
     yield takeEvery('ADD_COLUMN_AND_SUBSCRIPTIONS', onAddColumn),
     yield takeLatest(['LOGOUT', 'LOGIN_FAILURE'], onLogout),
     yield takeEvery('DELETE_COLUMN', cleanupSubscriptions),
+    yield takeEvery('OPEN_ITEM', handleOpenItem),
     yield takeLatest('REMOVE_SUBSCRIPTION_FROM_COLUMN', cleanupSubscriptions),
     yield takeLatest('REPLACE_COLUMNS_AND_SUBSCRIPTIONS', cleanupSubscriptions),
     yield takeEvery('FETCH_COLUMN_SUBSCRIPTIONS', onFetchColumnSubscriptions),
@@ -687,7 +734,7 @@ export function* subscriptionsSagas() {
 }
 
 const minute = 1 * 60 * 1000
-const minPollingInterval = 2 * minute
+const minPollingInterval = minute
 function minimumRefetchTimeHasPassed(
   subscription: ColumnSubscription,
   _interval = minPollingInterval,

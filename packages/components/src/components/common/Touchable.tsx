@@ -18,7 +18,6 @@ export interface TouchableProps
   analyticsAction?: 'press' | 'toggle' | string | undefined
   analyticsCategory?: 'button' | 'checkbox' | 'link' | string | undefined
   analyticsLabel?: string | undefined
-  analyticsPayload?: Record<string, string | number | undefined> | undefined
   analyticsValue?: number | undefined
   children?: React.ReactNode
   selectable?: boolean
@@ -94,9 +93,9 @@ export const Touchable = React.forwardRef(
         onLongPress={onLongPress}
         onPress={onPress}
         style={[
-          props.style,
           props.disabled && { opacity: 0.5 },
           selectable === true && ({ userSelect: undefined } as any),
+          props.style,
         ]}
       />
     )

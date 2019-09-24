@@ -1,6 +1,6 @@
 import Octokit from '@octokit/rest'
 
-import { PlanID } from '../utils'
+import { FeatureFlagId, PlanID } from '../utils'
 import {
   GitHubAppType,
   GitHubComment,
@@ -55,6 +55,7 @@ export interface IssuePayloadEnhancement
   extends ReadUnreadEnhancement,
     SaveForLaterEnhancement {
   merged?: undefined
+  private?: boolean
   enhanced?: boolean
 }
 
@@ -62,6 +63,7 @@ export interface PullRequestPayloadEnhancement
   extends ReadUnreadEnhancement,
     SaveForLaterEnhancement {
   merged?: boolean
+  private?: boolean
   enhanced?: boolean
 }
 
@@ -108,6 +110,7 @@ export interface ColumnSubscriptionData<Item extends EnhancedItem> {
   errorMessage?: string
   canFetchMore?: boolean
   lastFetchedAt?: string
+  lastFetchedSuccessfullyAt?: string
 }
 
 export type ActivityColumnSubscription = {
@@ -265,7 +268,7 @@ export type ColumnFilters =
 export interface ColumnOptions {
   enableInAppUnreadIndicator?: boolean
   enableAppIconUnreadIndicator?: boolean
-  // enableDesktopPushNotifications?: boolean
+  enableDesktopPushNotifications?: boolean
   // enableMobilePushNotifications?: boolean
 }
 
@@ -398,12 +401,27 @@ export type ModalPayload =
       params?: undefined
     }
   | {
+      name: 'PRICING'
+      params?: {
+        initialSelectedPlanId?: PlanID | undefined
+        highlightFeature?: keyof Plan['featureFlags']
+      }
+    }
+  | {
       name: 'SETTINGS'
       params?: undefined
     }
   | {
       name: 'SETUP_GITHUB_ENTERPRISE'
       params?: undefined
+    }
+  | {
+      name: 'SUBSCRIBE'
+      params: { planId: PlanID | undefined }
+    }
+  | {
+      name: 'SUBSCRIBED'
+      params: { planId: PlanID }
     }
 
 export type ModalPayloadWithIndex = ModalPayload & { index: number }
@@ -535,6 +553,7 @@ export interface Plan {
   intervalCount: number
 
   featureLabels: Array<{
+    id: FeatureFlagId
     label: string
     available: boolean
   }>
@@ -549,3 +568,13 @@ export interface Plan {
 }
 
 export interface UserPlan extends GraphQLUserPlan {}
+
+export interface ItemPushNotification<
+  A extends { type: string; payload: any } = { type: string; payload: any }
+> {
+  title: string
+  subtitle?: string
+  body: string
+  imageURL?: string
+  onClickDispatchAction?: A
+}

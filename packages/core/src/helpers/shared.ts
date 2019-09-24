@@ -12,12 +12,12 @@ import {
   EnhancedGitHubNotification,
   EnhancedItem,
   GitHubEventAction,
-  GitHubIssueOrPullRequest,
   GitHubItemSubjectType,
   GitHubNotification,
   GitHubStateType,
   IssueOrPullRequestColumnFilters,
   NotificationColumnFilters,
+  UserPlan,
 } from '../types'
 import { getOwnerAndRepoFormattedFilter } from './filters'
 import {
@@ -122,9 +122,9 @@ export function getDateSmallText(date: MomentInput, includeExactTime = false) {
 
 // sizes will be multiples of 50 for caching (e.g 50, 100, 150, ...)
 export function getSteppedSize(
-  size?: number,
-  sizeSteps = 50,
-  getPixelSizeForLayoutSizeFn?: (size: number) => number,
+  size: number | undefined,
+  sizeSteps: number | undefined = 50,
+  getPixelSizeForLayoutSizeFn: ((size: number) => number) | undefined,
 ) {
   const steppedSize =
     typeof size === 'number'
@@ -165,11 +165,10 @@ export function isNotificationPrivate(notification: GitHubNotification) {
   return !!(notification.repository && notification.repository.private)
 }
 
-// TODO: GitHub doesn't return this info apparently
 export function isIssueOrPullRequestPrivate(
-  _issueOrPullRequest: GitHubIssueOrPullRequest,
+  _issueOrPullRequest: EnhancedGitHubIssueOrPullRequest,
 ) {
-  return false
+  return !!(_issueOrPullRequest && _issueOrPullRequest.private)
 }
 
 export function deepMapper<T extends object, R = T>(
@@ -935,30 +934,107 @@ export function getItemInbox(type: Column['type'], filters: Column['filters']) {
   return 'all'
 }
 
+export function getColumnOptionMetadata({
+  Platform,
+  plan,
+}: {
+  Platform: { OS: 'web' | 'ios' | 'android'; isElectron: boolean }
+  plan: Pick<UserPlan, 'amount' | 'featureFlags' | 'status'> | null | undefined
+}): Record<
+  keyof ColumnOptions,
+  {
+    hasAccess: boolean | 'trial'
+    platformSupports: boolean
+  }
+> {
+  return {
+    enableAppIconUnreadIndicator: {
+      hasAccess: true,
+      platformSupports: true,
+    },
+    enableInAppUnreadIndicator: {
+      hasAccess: true,
+      platformSupports: Platform.OS === 'web',
+    },
+    enableDesktopPushNotifications: {
+      hasAccess: !!(plan &&
+      (plan.status === 'active' || plan.status === 'trialing') &&
+      plan.featureFlags &&
+      plan.featureFlags.enablePushNotifications
+        ? plan.status === 'trialing' && !plan.amount
+          ? 'trial'
+          : true
+        : false),
+      platformSupports: Platform.isElectron,
+    },
+  }
+}
+
 export function getColumnOption<O extends keyof ColumnOptions>(
-  column: Column,
+  column: Column | undefined,
   option: O,
-  platform: 'web' | 'ios' | 'android' | 'macos' | 'windows',
-): ColumnOptions[O] | undefined {
-  if (!(column && column.type)) return undefined
+  {
+    Platform,
+    plan,
+  }: {
+    Platform: { OS: 'web' | 'ios' | 'android'; isElectron: boolean }
+    plan:
+      | Pick<UserPlan, 'amount' | 'featureFlags' | 'status'>
+      | null
+      | undefined
+  },
+): {
+  hasAccess: boolean | 'trial'
+  platformSupports: boolean
+  value: ColumnOptions[O] | undefined
+} {
+  if (!(column && column.type))
+    return { hasAccess: false, platformSupports: false, value: undefined }
+
+  const details = getColumnOptionMetadata({ Platform, plan })
 
   if (option === 'enableAppIconUnreadIndicator') {
-    return column.options &&
-      typeof column.options.enableAppIconUnreadIndicator === 'boolean'
-      ? column.options.enableAppIconUnreadIndicator
-      : platform === 'web'
-      ? column.type === 'notifications'
-      : false
+    return {
+      ...details.enableAppIconUnreadIndicator,
+      value:
+        column.options &&
+        typeof column.options.enableAppIconUnreadIndicator === 'boolean'
+          ? column.options.enableAppIconUnreadIndicator
+          : Platform.OS === 'web'
+          ? column.type === 'notifications'
+          : false,
+    }
   }
 
   if (option === 'enableInAppUnreadIndicator') {
-    return column.options &&
-      typeof column.options.enableInAppUnreadIndicator === 'boolean'
-      ? column.options.enableInAppUnreadIndicator
-      : true
+    return {
+      ...details.enableInAppUnreadIndicator,
+      value:
+        column.options &&
+        typeof column.options.enableInAppUnreadIndicator === 'boolean'
+          ? column.options.enableInAppUnreadIndicator
+          : true,
+    }
   }
 
-  return column.options && column.options[option]
+  if (option === 'enableDesktopPushNotifications') {
+    return {
+      ...details.enableDesktopPushNotifications,
+      value:
+        column.options &&
+        typeof column.options.enableDesktopPushNotifications === 'boolean'
+          ? column.options.enableDesktopPushNotifications
+          : Platform.isElectron
+          ? column.type === 'notifications'
+          : false,
+    }
+  }
+
+  return {
+    hasAccess: false,
+    platformSupports: false,
+    value: column.options && column.options[option],
+  }
 }
 
 export function fixDateToISO(

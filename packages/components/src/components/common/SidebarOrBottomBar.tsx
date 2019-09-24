@@ -10,6 +10,7 @@ import {
   FlatList,
   FlatListProps,
   ImageStyle,
+  PixelRatio,
   StyleSheet,
   TextStyle,
   View,
@@ -17,6 +18,7 @@ import {
 } from 'react-native'
 
 import {
+  constants,
   getColumnOption,
   getUserAvatarByUsername,
   getUserURLFromLogin,
@@ -315,6 +317,27 @@ export const SidebarOrBottomBar = React.memo(
       [],
     )
 
+    const PreferencesItem = (
+      <SidebarOrBottomBarItem
+        horizontal={horizontal}
+        icon="gear"
+        onPress={() =>
+          small && currentOpenedModal && currentOpenedModal.name === 'SETTINGS'
+            ? columnIds.length === 0
+              ? dispatch(actions.closeAllModals())
+              : undefined
+            : dispatch(actions.replaceModal({ name: 'SETTINGS' }))
+        }
+        selected={isModalOpen('SETTINGS')}
+        title="Preferences"
+      />
+    )
+    const renderPreferencesItemInline = !!(
+      horizontal &&
+      small &&
+      columnIds.length <= 3
+    )
+
     return (
       <SidebarHoverItemContextProvider>
         <ThemedView
@@ -359,9 +382,13 @@ export const SidebarOrBottomBar = React.memo(
                       <Avatar
                         avatarUrl={
                           user!.avatarUrl ||
-                          getUserAvatarByUsername(user!.login, {
-                            baseURL: undefined,
-                          })
+                          getUserAvatarByUsername(
+                            user!.login,
+                            {
+                              baseURL: undefined,
+                            },
+                            PixelRatio.getPixelSizeForLayoutSize,
+                          )
                         }
                         disableLink
                         shape="circle"
@@ -384,6 +411,9 @@ export const SidebarOrBottomBar = React.memo(
               ]}
             >
               <FlatListWithOverlay
+                ListFooterComponent={
+                  renderPreferencesItemInline ? () => PreferencesItem : null
+                }
                 bottomOrRightOverlayThemeColor={
                   overlayThemeColorsRef.current.bottomOrRight
                 }
@@ -430,27 +460,13 @@ export const SidebarOrBottomBar = React.memo(
               />
             )}
 
-            <SidebarOrBottomBarItem
-              horizontal={horizontal}
-              icon="gear"
-              onPress={() =>
-                small &&
-                currentOpenedModal &&
-                currentOpenedModal.name === 'SETTINGS'
-                  ? columnIds.length === 0
-                    ? dispatch(actions.closeAllModals())
-                    : undefined
-                  : dispatch(actions.replaceModal({ name: 'SETTINGS' }))
-              }
-              selected={isModalOpen('SETTINGS')}
-              title="Preferences"
-            />
+            {!renderPreferencesItemInline && PreferencesItem}
 
             {!(horizontal && small) && (
               <SidebarOrBottomBarItem horizontal={horizontal} title="">
                 <Link
                   analyticsLabel="sidebar_devhub_logo"
-                  href="https://github.com/devhubapp/devhub"
+                  href={constants.DEVHUB_LINKS.GITHUB_REPOSITORY}
                   openOnNewTab
                   style={[
                     sharedStyles.fullWidth,
@@ -459,9 +475,13 @@ export const SidebarOrBottomBar = React.memo(
                   ]}
                 >
                   <Avatar
-                    avatarUrl={getUserAvatarByUsername('devhubapp', {
-                      baseURL: undefined,
-                    })}
+                    avatarUrl={getUserAvatarByUsername(
+                      'devhubapp',
+                      {
+                        baseURL: undefined,
+                      },
+                      PixelRatio.getPixelSizeForLayoutSize,
+                    )}
                     disableLink
                     shape="circle"
                     size={sidebarAvatarSize}
@@ -500,10 +520,16 @@ export const SidebarOrBottomBarColumnItem = React.memo(
 
     const dispatch = useDispatch()
     const currentOpenedModal = useReduxState(selectors.currentOpenedModal)
+    const plan = useReduxState(selectors.currentUserPlanSelector)
 
     const small = sizename <= '2-medium'
 
-    const { column, columnIndex, headerDetails } = useColumn(columnId)
+    const {
+      column,
+      columnIndex,
+      hasCrossedColumnsLimit,
+      headerDetails,
+    } = useColumn(columnId)
 
     const { filteredItems } = useColumnData(columnId, {
       mergeSimilar: false,
@@ -534,29 +560,65 @@ export const SidebarOrBottomBarColumnItem = React.memo(
     const onPress = useCallback(() => {
       if (currentOpenedModal) dispatch(actions.closeAllModals())
 
-      emitter.emit('FOCUS_ON_COLUMN', {
-        animated: !currentOpenedModal,
-        columnId,
-        highlight: !small,
-        scrollTo: true,
-      })
-    }, [!!currentOpenedModal, small])
+      if (isColumnFocused) {
+        emitter.emit('SCROLL_TOP_COLUMN', { columnId })
+      } else {
+        emitter.emit('FOCUS_ON_COLUMN', {
+          animated: !currentOpenedModal,
+          columnId,
+          highlight: !small,
+          scrollTo: true,
+        })
+      }
+    }, [columnId, !!currentOpenedModal, isColumnFocused, small])
 
-    const hasUnread =
-      !!column &&
-      getColumnOption(column, 'enableInAppUnreadIndicator', Platform.OS)
+    const showUnreadIndicator =
+      hasCrossedColumnsLimit ||
+      (!!column &&
+      getColumnOption(column, 'enableInAppUnreadIndicator', { Platform, plan })
+        .hasAccess &&
+      getColumnOption(column, 'enableInAppUnreadIndicator', { Platform, plan })
+        .platformSupports &&
+      getColumnOption(column, 'enableInAppUnreadIndicator', { Platform, plan })
+        .value
         ? filteredItems.some(item => !isItemRead(item))
-        : false
+        : false)
 
-    const unreadIndicatorColor =
-      column &&
-      getColumnOption(column, 'enableAppIconUnreadIndicator', Platform.OS)
-        ? 'lightRed'
-        : undefined
+    const unreadIndicatorColor:
+      | keyof ThemeColors
+      | undefined = hasCrossedColumnsLimit
+      ? 'foregroundColorMuted65'
+      : column &&
+        ((getColumnOption(column, 'enableAppIconUnreadIndicator', {
+          Platform,
+          plan,
+        }).hasAccess &&
+          getColumnOption(column, 'enableAppIconUnreadIndicator', {
+            Platform,
+            plan,
+          }).platformSupports &&
+          getColumnOption(column, 'enableAppIconUnreadIndicator', {
+            Platform,
+            plan,
+          }).value) ||
+          (getColumnOption(column, 'enableDesktopPushNotifications', {
+            Platform,
+            plan,
+          }).hasAccess &&
+            getColumnOption(column, 'enableDesktopPushNotifications', {
+              Platform,
+              plan,
+            }).platformSupports &&
+            getColumnOption(column, 'enableDesktopPushNotifications', {
+              Platform,
+              plan,
+            }).value))
+      ? 'lightRed'
+      : undefined
 
     useEffect(() => {
-      columnIndexUnreadMapperRef.current.set(columnIndex, hasUnread)
-    }, [columnIndex, hasUnread])
+      columnIndexUnreadMapperRef.current.set(columnIndex, showUnreadIndicator)
+    }, [columnIndex, showUnreadIndicator])
 
     if (!(column && columnIndex >= 0 && headerDetails)) return null
 
@@ -569,7 +631,7 @@ export const SidebarOrBottomBarColumnItem = React.memo(
         number={columnIndex + 1}
         onPress={onPress}
         selected={isColumnFocused && !currentOpenedModal}
-        showUnreadIndicator={hasUnread}
+        showUnreadIndicator={showUnreadIndicator}
         subtitle={headerDetails.subtitle}
         title={headerDetails.title}
         unreadIndicatorColor={unreadIndicatorColor}
@@ -636,14 +698,16 @@ export const SidebarOrBottomBarItem = React.memo(
           >
             {!!n && (
               <>
-                <ThemedText color="foregroundColorMuted65">{n}</ThemedText>
+                <ThemedText color="foregroundColorMuted65" selectable={false}>
+                  {n}
+                </ThemedText>
                 <Spacer width={contentPadding / 2} />
               </>
             )}
 
             {!!title && (
               <>
-                <ThemedText color="foregroundColor">
+                <ThemedText color="foregroundColor" selectable={false}>
                   {title.toLowerCase()}
                 </ThemedText>
                 <Spacer width={contentPadding / 2} />
@@ -652,7 +716,7 @@ export const SidebarOrBottomBarItem = React.memo(
 
             {!!subtitle && (
               <>
-                <ThemedText color="foregroundColorMuted65">
+                <ThemedText color="foregroundColorMuted65" selectable={false}>
                   {subtitle.toLowerCase()}
                 </ThemedText>
                 <Spacer width={contentPadding / 2} />

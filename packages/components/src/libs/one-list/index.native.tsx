@@ -15,7 +15,8 @@ export const OneList = (React.memo(
       () => ({
         scrollToStart: ({ animated }: { animated?: boolean } = {}) => {
           try {
-            flatListRef.current!.scrollToOffset({ animated, offset: 0 })
+            if (!flatListRef.current) return
+            flatListRef.current.scrollToOffset({ animated, offset: 0 })
           } catch (error) {
             console.error(error)
             bugsnag.notify(error)
@@ -23,7 +24,8 @@ export const OneList = (React.memo(
         },
         scrollToEnd: ({ animated }: { animated?: boolean } = {}) => {
           try {
-            flatListRef.current!.scrollToEnd({ animated })
+            if (!flatListRef.current) return
+            flatListRef.current.scrollToEnd({ animated })
           } catch (error) {
             console.error(error)
             bugsnag.notify(error)
@@ -31,10 +33,12 @@ export const OneList = (React.memo(
         },
         scrollToIndex: (index, params) => {
           try {
+            if (!flatListRef.current) return
+
             const alignment = params ? params.alignment : 'center'
 
             // TODO: Implement 'smart' alignment like react-window
-            flatListRef.current!.scrollToIndex({
+            flatListRef.current.scrollToIndex({
               animated: !!(params && params.animated),
               index,
               viewOffset: 0,
@@ -54,6 +58,7 @@ export const OneList = (React.memo(
 
     const {
       ListEmptyComponent,
+      containerStyle,
       data,
       disableVirtualization,
       estimatedItemSize,
@@ -63,6 +68,7 @@ export const OneList = (React.memo(
       header,
       horizontal,
       itemSeparator,
+      listStyle,
       onVisibleItemsChanged,
       overscanCount = 1,
       pagingEnabled,
@@ -162,6 +168,7 @@ export const OneList = (React.memo(
           sharedStyles.flex,
           sharedStyles.fullWidth,
           sharedStyles.fullHeight,
+          containerStyle,
         ]}
       >
         {header &&
@@ -213,24 +220,32 @@ export const OneList = (React.memo(
                                 : -1
 
                             return (
-                              <itemSeparator.Component
-                                leading={
-                                  leadingIndex >= 0
-                                    ? {
-                                        index: leadingIndex,
-                                        item: data[leadingIndex],
-                                      }
-                                    : undefined
-                                }
-                                trailing={
-                                  trailingIndex >= 0
-                                    ? {
-                                        index: trailingIndex,
-                                        item: data[trailingIndex],
-                                      }
-                                    : undefined
-                                }
-                              />
+                              <>
+                                {!!(
+                                  itemSeparator &&
+                                  itemSeparator.size &&
+                                  itemSeparator.Component
+                                ) && (
+                                  <itemSeparator.Component
+                                    leading={
+                                      leadingIndex >= 0
+                                        ? {
+                                            index: leadingIndex,
+                                            item: data[leadingIndex],
+                                          }
+                                        : undefined
+                                    }
+                                    trailing={
+                                      trailingIndex >= 0
+                                        ? {
+                                            index: trailingIndex,
+                                            item: data[trailingIndex],
+                                          }
+                                        : undefined
+                                    }
+                                  />
+                                )}
+                              </>
                             )
                           }
                         : undefined
@@ -261,10 +276,13 @@ export const OneList = (React.memo(
                     renderItem={renderItem}
                     scrollEventThrottle={16}
                     snapToAlignment={snapToAlignment}
-                    style={{
-                      width: horizontal ? width : '100%',
-                      height: horizontal ? '100%' : height,
-                    }}
+                    style={[
+                      listStyle,
+                      {
+                        width: horizontal ? width : '100%',
+                        height: horizontal ? '100%' : height,
+                      },
+                    ]}
                     updateCellsBatchingPeriod={0}
                     viewabilityConfig={viewabilityConfig}
                     windowSize={

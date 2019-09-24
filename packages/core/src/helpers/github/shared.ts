@@ -28,6 +28,7 @@ import {
   ItemsFilterMetadata,
   NotificationColumnSubscription,
   ThemeColors,
+  UserPlan,
 } from '../../types'
 import { constants } from '../../utils'
 import {
@@ -162,7 +163,7 @@ export function getUserURLFromObject(
 export function getUserAvatarByAvatarURL(
   avatarUrl: string,
   { size }: { size?: number } = {},
-  getPixelSizeForLayoutSizeFn?: (size: number) => number,
+  getPixelSizeForLayoutSizeFn: ((size: number) => number) | undefined,
 ) {
   if (!avatarUrl) return ''
 
@@ -180,7 +181,7 @@ export function getUserAvatarByAvatarURL(
 export function getUserAvatarByUsername(
   username: string,
   { baseURL, size }: { baseURL: string | undefined; size?: number },
-  getPixelSizeForLayoutSizeFn?: (size: number) => number,
+  getPixelSizeForLayoutSizeFn: ((size: number) => number) | undefined,
 ) {
   return username
     ? `${baseURL || 'https://github.com'}/${username}.png?size=${getSteppedSize(
@@ -194,14 +195,19 @@ export function getUserAvatarByUsername(
 export function getUserAvatarFromObject(
   user: { login: string; avatar_url: string; url?: string; html_url?: string },
   { size }: { size?: number } = {},
+  getPixelSizeForLayoutSizeFn: ((size: number) => number) | undefined,
 ) {
   if (user.avatar_url) return user.avatar_url
   if (!user.login) return undefined
 
-  return getUserAvatarByUsername(user.login, {
-    baseURL: getBaseUrlFromOtherUrl(user.html_url || user.url),
-    size,
-  })
+  return getUserAvatarByUsername(
+    user.login,
+    {
+      baseURL: getBaseUrlFromOtherUrl(user.html_url || user.url),
+      size,
+    },
+    getPixelSizeForLayoutSizeFn,
+  )
 }
 
 export function tryGetUsernameFromGitHubEmail(email?: string) {
@@ -221,7 +227,7 @@ export function getUserAvatarByEmail(
     size,
     ...otherOptions
   }: { baseURL: string | undefined; size?: number },
-  getPixelSizeForLayoutSizeFn?: (size: number) => number,
+  getPixelSizeForLayoutSizeFn: ((size: number) => number) | undefined,
 ) {
   const steppedSize = getSteppedSize(
     size,
@@ -243,7 +249,7 @@ export function getUserAvatarByEmail(
 export function isPullRequest(issue: {
   pull_request?: object
   merged_at?: GitHubPullRequest['merged_at']
-  html_url: GitHubPullRequest['html_url']
+  html_url?: GitHubPullRequest['html_url']
   url?: GitHubPullRequest['url']
 }) {
   return !!(
@@ -389,11 +395,12 @@ type HeaderDetailsAvatarProps =
   | undefined
 export function getColumnHeaderDetails(
   column: Column | undefined,
-  subscription: ColumnSubscription | undefined,
+  subscriptions: ColumnSubscription[] | undefined,
   {
     baseURL = defaultBaseURL,
     loggedUsername,
   }: { baseURL?: string | undefined; loggedUsername: string | undefined },
+  getPixelSizeForLayoutSizeFn: ((size: number) => number) | undefined,
 ):
   | {
       avatarProps?: HeaderDetailsAvatarProps
@@ -416,15 +423,20 @@ export function getColumnHeaderDetails(
     )
   }
 
+  const subscription = (subscriptions || []).slice(-1)[0] || {}
   switch (column && column.type) {
     case 'activity': {
-      const s = (subscription || {}) as Partial<ActivityColumnSubscription>
+      const s = subscription as Partial<ActivityColumnSubscription>
 
       switch (s.subtype) {
         case 'ORG_PUBLIC_EVENTS': {
           return {
             avatarProps: {
-              imageURL: getUserAvatarByUsername(s.params!.org, { baseURL }),
+              imageURL: getUserAvatarByUsername(
+                s.params!.org,
+                { baseURL },
+                getPixelSizeForLayoutSizeFn,
+              ),
               linkURL: getUserURLFromLogin(s.params!.org!, { baseURL })!,
               type: 'org',
             },
@@ -450,9 +462,13 @@ export function getColumnHeaderDetails(
             avatarProps: isSameUsernameFromLoggedUser(s.params!.owner)
               ? undefined
               : {
-                  imageURL: getUserAvatarByUsername(s.params!.owner, {
-                    baseURL,
-                  }),
+                  imageURL: getUserAvatarByUsername(
+                    s.params!.owner,
+                    {
+                      baseURL,
+                    },
+                    getPixelSizeForLayoutSizeFn,
+                  ),
                   linkURL: `${baseURL}/${s.params!.owner}/${s.params!.repo}`,
                   type: 'repo',
                 },
@@ -470,9 +486,13 @@ export function getColumnHeaderDetails(
             avatarProps: isSameUsernameFromLoggedUser(s.params!.owner)
               ? undefined
               : {
-                  imageURL: getUserAvatarByUsername(s.params!.owner, {
-                    baseURL,
-                  }),
+                  imageURL: getUserAvatarByUsername(
+                    s.params!.owner,
+                    {
+                      baseURL,
+                    },
+                    getPixelSizeForLayoutSizeFn,
+                  ),
                   linkURL: `${baseURL}/${s.params!.owner}/${s.params!.repo}`,
                   type: 'repo',
                 },
@@ -490,9 +510,13 @@ export function getColumnHeaderDetails(
             avatarProps: isSameUsernameFromLoggedUser(s.params!.username)
               ? undefined
               : {
-                  imageURL: getUserAvatarByUsername(s.params!.username, {
-                    baseURL,
-                  }),
+                  imageURL: getUserAvatarByUsername(
+                    s.params!.username,
+                    {
+                      baseURL,
+                    },
+                    getPixelSizeForLayoutSizeFn,
+                  ),
                   linkURL: getUserURLFromLogin(s.params!.username, {
                     baseURL,
                   })!,
@@ -509,7 +533,11 @@ export function getColumnHeaderDetails(
         case 'USER_ORG_EVENTS': {
           return {
             avatarProps: {
-              imageURL: getUserAvatarByUsername(s.params!.org, { baseURL }),
+              imageURL: getUserAvatarByUsername(
+                s.params!.org,
+                { baseURL },
+                getPixelSizeForLayoutSizeFn,
+              ),
               linkURL: getUserURLFromLogin(s.params!.org!, { baseURL })!,
               type: 'org',
             },
@@ -526,9 +554,13 @@ export function getColumnHeaderDetails(
             avatarProps: isSameUsernameFromLoggedUser(s.params!.username)
               ? undefined
               : {
-                  imageURL: getUserAvatarByUsername(s.params!.username, {
-                    baseURL,
-                  }),
+                  imageURL: getUserAvatarByUsername(
+                    s.params!.username,
+                    {
+                      baseURL,
+                    },
+                    getPixelSizeForLayoutSizeFn,
+                  ),
                   linkURL: getUserURLFromLogin(s.params!.username, {
                     baseURL,
                   })!,
@@ -548,9 +580,13 @@ export function getColumnHeaderDetails(
             avatarProps: isSameUsernameFromLoggedUser(s.params!.username)
               ? undefined
               : {
-                  imageURL: getUserAvatarByUsername(s.params!.username, {
-                    baseURL,
-                  }),
+                  imageURL: getUserAvatarByUsername(
+                    s.params!.username,
+                    {
+                      baseURL,
+                    },
+                    getPixelSizeForLayoutSizeFn,
+                  ),
                   linkURL: getUserURLFromLogin(s.params!.username, {
                     baseURL,
                   })!,
@@ -582,9 +618,7 @@ export function getColumnHeaderDetails(
     }
 
     case 'issue_or_pr': {
-      const s = (subscription || {}) as Partial<
-        IssueOrPullRequestColumnSubscription
-      >
+      const s = subscription as Partial<IssueOrPullRequestColumnSubscription>
 
       const {
         allIncludedOwners,
@@ -644,7 +678,11 @@ export function getColumnHeaderDetails(
       const avatarProps: HeaderDetailsAvatarProps =
         avatarUsername && !isSameUsernameFromLoggedUser(avatarUsername)
           ? {
-              imageURL: getUserAvatarByUsername(avatarUsername, { baseURL }),
+              imageURL: getUserAvatarByUsername(
+                avatarUsername,
+                { baseURL },
+                getPixelSizeForLayoutSizeFn,
+              ),
               linkURL: ownerAndRepo.repo
                 ? getRepoUrlFromFullName(
                     `${avatarUsername}/${ownerAndRepo.repo}`,
@@ -690,7 +728,7 @@ export function getColumnHeaderDetails(
     }
 
     case 'notifications': {
-      const s = (subscription || {}) as Partial<NotificationColumnSubscription>
+      const s = subscription as Partial<NotificationColumnSubscription>
 
       switch (s.subtype) {
         case 'REPO_NOTIFICATIONS': {
@@ -838,8 +876,7 @@ export function getPullRequestIconAndColor(pullRequest: {
   mergeable_state: GitHubPullRequest['mergeable_state'] | undefined
 }): { icon: GitHubIcon; color?: keyof ThemeColors; tooltip: string } {
   const draft = isDraft(pullRequest)
-  const merged = !!(pullRequest.merged || pullRequest.merged_at)
-  const state = merged ? 'merged' : pullRequest.state
+  const state = getIssueOrPullRequestState(pullRequest)
 
   switch (state) {
     case 'open':
@@ -1084,7 +1121,10 @@ export function getItemIssueOrPullRequest(
 export function getItemOwnersAndRepos(
   type: ColumnSubscription['type'],
   item: EnhancedItem | undefined,
-  { includeFork }: { includeFork?: boolean } = {},
+  {
+    includeFork,
+    plan,
+  }: { includeFork?: boolean; plan: UserPlan | null | undefined },
 ): Array<{ owner: string; repo: string }> {
   const mapResult: Record<string, any> = {}
 
@@ -1118,7 +1158,7 @@ export function getItemOwnersAndRepos(
   switch (type) {
     case 'activity': {
       const event = item as EnhancedGitHubEvent
-      const { repos, forkee } = getGitHubEventSubItems(event)
+      const { repos, forkee } = getGitHubEventSubItems(event, { plan })
 
       const _allRepos: GitHubRepo[] = [
         ...(repos || []),
@@ -1217,13 +1257,16 @@ export function getFilteredItems(
   filters: ColumnFilters | undefined,
   {
     mergeSimilar,
+    plan,
   }: {
     mergeSimilar: boolean
+    plan: UserPlan | null | undefined
   },
 ) {
   if (type === 'activity') {
     return getFilteredEvents(items as EnhancedGitHubEvent[], filters, {
       mergeSimilar,
+      plan,
     })
   }
 
@@ -1231,6 +1274,7 @@ export function getFilteredItems(
     return getFilteredIssueOrPullRequests(
       items as EnhancedGitHubIssueOrPullRequest[],
       filters,
+      { plan },
     )
   }
 
@@ -1238,6 +1282,7 @@ export function getFilteredItems(
     return getFilteredNotifications(
       items as EnhancedGitHubNotification[],
       filters,
+      { plan },
     )
   }
 
@@ -1290,10 +1335,12 @@ export function getItemsFilterMetadata(
   {
     forceIncludeTheseOwners = [],
     forceIncludeTheseRepos = [],
+    plan,
   }: {
     forceIncludeTheseOwners?: string[]
     forceIncludeTheseRepos?: string[]
-  } = {},
+    plan: UserPlan | null | undefined
+  },
 ): ItemsFilterMetadata {
   const result: ItemsFilterMetadata = getDefaultItemsFilterMetadata()
   ;(items || []).filter(Boolean).forEach(item => {
@@ -1313,7 +1360,7 @@ export function getItemsFilterMetadata(
     const eventAction = event && getEventMetadata(event).action
     const privacy = getItemPrivacy(type, item)
 
-    const ownersAndRepos = getItemOwnersAndRepos(type, item)
+    const ownersAndRepos = getItemOwnersAndRepos(type, item, { plan })
 
     function updateNestedCounter(objRef: ItemFilterCountMetadata) {
       if (read) objRef.read++
@@ -1417,6 +1464,7 @@ export function getItemsFilterMetadata(
 export function getItemSearchableStrings(
   type: ColumnSubscription['type'],
   item: EnhancedItem,
+  { plan }: { plan: UserPlan | null | undefined },
 ): string[] {
   const strings: string[] = []
 
@@ -1430,7 +1478,7 @@ export function getItemSearchableStrings(
 
   const id = item.id
 
-  const ownersAndRepos = getItemOwnersAndRepos(type, item)
+  const ownersAndRepos = getItemOwnersAndRepos(type, item, { plan })
 
   strings.push(`${id || ''}`)
 
@@ -1492,7 +1540,7 @@ export function getItemSearchableStrings(
       // repos,
       // userIds,
       users,
-    } = getGitHubEventSubItems(event)
+    } = getGitHubEventSubItems(event, { plan })
 
     comment = _comment
     release = _release
@@ -1538,10 +1586,10 @@ export function getItemSearchableStrings(
       comment: _comment,
       commit,
       createdAt,
+      // canSee,
       // id,
       // isBot,
       // isPrivate,
-      // isPrivateAndCantSee,
       // isRead,
       // isRepoInvitation,
       // isSaved,
@@ -1553,7 +1601,7 @@ export function getItemSearchableStrings(
       // repoFullName,
       subject,
       updatedAt,
-    } = getGitHubNotificationSubItems(notification)
+    } = getGitHubNotificationSubItems(notification, { plan })
 
     comment = _comment
     release = _release as any // TODO: Fix type error

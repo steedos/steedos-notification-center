@@ -18,15 +18,15 @@ import {
 } from './partials/CardItemSeparator'
 
 export interface CardsFooterProps {
-  columnId: Column['id']
   clearedAt: string | undefined
-  isEmpty: boolean
+  columnId: Column['id']
   fetchNextPage: (() => void) | undefined
+  isEmpty: boolean
   refresh: (() => void | Promise<void>) | undefined
 }
 
 export const CardsFooter = React.memo((props: CardsFooterProps) => {
-  const { columnId, clearedAt, fetchNextPage, isEmpty, refresh } = props
+  const { clearedAt, columnId, fetchNextPage, isEmpty, refresh } = props
 
   const dispatch = useDispatch()
   const { sizename } = useAppLayout()
@@ -45,8 +45,6 @@ export const CardsFooter = React.memo((props: CardsFooterProps) => {
         },
       ]}
     >
-      {!isEmpty && <CardItemSeparator />}
-
       {fetchNextPage ? (
         <View
           style={
@@ -70,7 +68,9 @@ export const CardsFooter = React.memo((props: CardsFooterProps) => {
             loading={loadState === 'loading_more'}
             onPress={fetchNextPage}
             round={isEmpty}
+            type={isEmpty ? undefined : 'transparent'}
           />
+          {!isEmpty && <CardItemSeparator muted />}
         </View>
       ) : clearedAt ? (
         <View
@@ -95,10 +95,12 @@ export const CardsFooter = React.memo((props: CardsFooterProps) => {
             round
           />
         </View>
-      ) : null}
-
-      {!isEmpty && shouldRenderFAB({ sizename }) && (
-        <Spacer height={fabSize + 2 * fabSpacing} />
+      ) : (
+        <>
+          {!isEmpty && shouldRenderFAB({ sizename }) && (
+            <Spacer height={fabSize + 2 * fabSpacing} />
+          )}
+        </>
       )}
     </View>
   )
@@ -119,15 +121,13 @@ export function getCardsFooterSize({
 
   const buttonVerticalSpacing =
     (fabSpacing + (fabSize - defaultButtonSize) / 2) * 2 + defaultButtonSize
-  return (
-    (isEmpty ? 0 : cardItemSeparatorSize) +
-    (hasFetchNextPage
-      ? isEmpty
-        ? buttonVerticalSpacing
-        : 0
-      : clearedAt
+  return hasFetchNextPage
+    ? isEmpty
       ? buttonVerticalSpacing
-      : 0) +
-    (!isEmpty && shouldRenderFAB({ sizename }) ? fabSize + 2 * fabSpacing : 0)
-  )
+      : defaultButtonSize + cardItemSeparatorSize
+    : clearedAt
+    ? buttonVerticalSpacing
+    : !isEmpty && shouldRenderFAB({ sizename })
+    ? fabSize + 2 * fabSpacing
+    : 0
 }

@@ -73,7 +73,7 @@ function* onSyncDown() {
         me?: {
           columns?: User['columns']
           subscriptions: User['subscriptions']
-          plan: UserPlan
+          plan: UserPlan | null | undefined
         }
       }
       errors?: any[]
@@ -106,6 +106,8 @@ function* onSyncDown() {
 
               currentPeriodStartAt
               currentPeriodEndAt
+
+              reason
 
               featureFlags {
                 columnsLimit
@@ -194,7 +196,7 @@ async function syncUp(state: RootState) {
   if (!appToken) return
 
   const columns = selectors.columnsArrSelector(state)
-  const subscriptions = selectors.subscriptionsArrSelector(state)
+  const subscriptions = selectors.allSubscriptionsArrSelector(state)
 
   try {
     // TODO: Auto generate these typings

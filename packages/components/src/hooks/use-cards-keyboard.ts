@@ -4,13 +4,14 @@ import { useDispatch } from 'react-redux'
 import { Column, EnhancedItem, isItemRead } from '@devhub/core'
 import { getCardPropsForItem } from '../components/cards/BaseCard.shared'
 import { getCurrentFocusedColumnId } from '../components/context/ColumnFocusContext'
-import { Browser } from '../libs/browser'
 import { emitter } from '../libs/emitter'
 import { OneList } from '../libs/one-list'
 import * as actions from '../redux/actions'
+import * as selectors from '../redux/selectors'
 import { useEmitter } from './use-emitter'
 import useKeyPressCallback from './use-key-press-callback'
 import useMultiKeyPressCallback from './use-multi-key-press-callback'
+import { useReduxState } from './use-redux-state'
 
 export function useCardsKeyboard(
   listRef: RefObject<typeof OneList>,
@@ -69,6 +70,8 @@ export function useCardsKeyboard(
 
   const dispatch = useDispatch()
 
+  const plan = useReduxState(selectors.currentUserPlanSelector)
+
   useEmitter(
     'FOCUS_ON_COLUMN',
     payload => {
@@ -118,6 +121,25 @@ export function useCardsKeyboard(
         listRef.current.scrollToIndex(selectedItemIndexRef.current)
     },
     [columnId, items],
+  )
+
+  const firstItemId = items && items[0] && items[0].id
+  useEmitter(
+    'SCROLL_TOP_COLUMN',
+    payload => {
+      if (payload.columnId !== columnId) return
+
+      emitter.emit('FOCUS_ON_COLUMN_ITEM', {
+        columnId,
+        itemId: firstItemId || null,
+        scrollTo: true,
+      })
+
+      if (!firstItemId && listRef.current) {
+        listRef.current.scrollToStart()
+      }
+    },
+    [columnId, firstItemId],
   )
 
   useEmitter(
@@ -212,22 +234,19 @@ export function useCardsKeyboard(
         items.find(item => item && item.id === selectedItemIdRef.current)
       if (!selectedItem) return
 
-      setTimeout(() => {
-        dispatch(
-          actions.markItemsAsReadOrUnread({
-            type,
-            itemIds: [selectedItem.id],
-            localOnly: true,
-            unread: false,
-          }),
-        )
-      }, 500)
-
-      Browser.openURLOnNewTab(
-        getCardPropsForItem(type, selectedItem, { ownerIsKnown, repoIsKnown })
-          .link,
+      dispatch(
+        actions.openItem({
+          columnType: type,
+          columnId,
+          itemId: selectedItem.id,
+          link: getCardPropsForItem(type, selectedItem, {
+            ownerIsKnown,
+            plan,
+            repoIsKnown,
+          }).link,
+        }),
       )
-    }, [items, type, ownerIsKnown, repoIsKnown]),
+    }, [items, type, columnId, ownerIsKnown, plan, repoIsKnown]),
   )
 
   useKeyPressCallback(

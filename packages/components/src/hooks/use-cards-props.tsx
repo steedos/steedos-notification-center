@@ -1,13 +1,15 @@
-import React, { useCallback, useMemo, useRef } from 'react'
-import { View } from 'react-native'
-
 import {
+  activePlans,
   Column,
   ColumnSubscription,
   constants,
   EnhancedItem,
   getDateSmallText,
 } from '@devhub/core'
+import React, { useCallback, useMemo, useRef } from 'react'
+import { View } from 'react-native'
+import { useDispatch } from 'react-redux'
+
 import {
   BaseCardProps,
   getCardPropsForItem,
@@ -23,19 +25,23 @@ import {
   CardsSearchHeader,
 } from '../components/cards/CardsSearchHeader'
 import { EmptyCards } from '../components/cards/EmptyCards'
-import {
-  CardItemSeparator,
-  cardItemSeparatorSize,
-} from '../components/cards/partials/CardItemSeparator'
+import { cardItemSeparatorSize } from '../components/cards/partials/CardItemSeparator'
+import { columnHeaderHeight } from '../components/columns/ColumnHeader'
 import {
   ColumnLoadingIndicator,
   columnLoadingIndicatorSize,
 } from '../components/columns/ColumnLoadingIndicator'
+import { Button } from '../components/common/Button'
 import { RefreshControl } from '../components/common/RefreshControl'
 import { useAppLayout } from '../components/context/LayoutContext'
 import { OneListProps } from '../libs/one-list'
 import { useSafeArea } from '../libs/safe-area-view'
+import * as actions from '../redux/actions'
+import * as selectors from '../redux/selectors'
 import { FlatListItemLayout } from '../utils/types'
+import { useDimensions } from './use-dimensions'
+import { usePreviousRef } from './use-previous-ref'
+import { useReduxState } from './use-redux-state'
 
 export interface DataItemT<ItemT extends EnhancedItem> {
   cachedCardProps: BaseCardProps
@@ -48,7 +54,7 @@ export function useCardsProps<ItemT extends EnhancedItem>({
   columnIndex,
   fetchNextPage,
   items,
-  lastFetchedAt,
+  lastFetchedSuccessfullyAt,
   ownerIsKnown,
   refresh,
   repoIsKnown,
@@ -58,7 +64,7 @@ export function useCardsProps<ItemT extends EnhancedItem>({
   columnIndex: number
   fetchNextPage: CardsFooterProps['fetchNextPage']
   items: ItemT[] | undefined
-  lastFetchedAt: string | undefined
+  lastFetchedSuccessfullyAt: string | undefined
   ownerIsKnown: boolean
   refresh: CardsFooterProps['refresh']
   repoIsKnown: boolean
@@ -72,7 +78,21 @@ export function useCardsProps<ItemT extends EnhancedItem>({
 
   const appSafeAreaInsets = useSafeArea()
   const { appOrientation } = useAppLayout()
+  const { height: windowHeight } = useDimensions('height')
 
+  const dispatch = useDispatch()
+  const plan = useReduxState(selectors.currentUserPlanSelector)
+
+  const isOverPlanColumnLimit = !!(
+    plan && columnIndex + 1 > plan.featureFlags.columnsLimit
+  )
+  const isOverMaxColumnLimit = !!(
+    columnIndex >= 0 && columnIndex + 1 > constants.COLUMNS_LIMIT
+  )
+
+  const previousOwnerIsKnownRef = usePreviousRef(ownerIsKnown)
+  const previousPlanRef = usePreviousRef(plan)
+  const previousRepoIsKnownRef = usePreviousRef(repoIsKnown)
   const itemCardProps = useMemo<Array<BaseCardProps | undefined>>(() => {
     const newCacheMap = new WeakMap()
 
@@ -81,10 +101,19 @@ export function useCardsProps<ItemT extends EnhancedItem>({
       return []
     }
 
+    if (
+      previousOwnerIsKnownRef.current !== ownerIsKnown ||
+      previousPlanRef.current !== plan ||
+      previousRepoIsKnownRef.current !== repoIsKnown
+    ) {
+      cardPropsCacheMapRef.current = newCacheMap
+    }
+
     const result = items.map<BaseCardProps>(item => {
       const cached = cardPropsCacheMapRef.current.get(item)
       const value =
-        cached || getCardPropsForItem(type, item, { ownerIsKnown, repoIsKnown })
+        cached ||
+        getCardPropsForItem(type, item, { ownerIsKnown, plan, repoIsKnown })
       newCacheMap.set(item, value)
 
       return value
@@ -93,7 +122,7 @@ export function useCardsProps<ItemT extends EnhancedItem>({
     cardPropsCacheMapRef.current = newCacheMap
 
     return result
-  }, [items, ownerIsKnown, repoIsKnown])
+  }, [items, ownerIsKnown, plan, repoIsKnown])
 
   const itemLayouts = useMemo<Array<FlatListItemLayout | undefined>>(() => {
     const newCacheMap = new WeakMap()
@@ -101,6 +130,14 @@ export function useCardsProps<ItemT extends EnhancedItem>({
     if (!(items && items.length)) {
       sizeCacheMapRef.current = newCacheMap
       return []
+    }
+
+    if (
+      previousOwnerIsKnownRef.current !== ownerIsKnown ||
+      previousPlanRef.current !== plan ||
+      previousRepoIsKnownRef.current !== repoIsKnown
+    ) {
+      sizeCacheMapRef.current = newCacheMap
     }
 
     let totalOffset = 0
@@ -122,7 +159,7 @@ export function useCardsProps<ItemT extends EnhancedItem>({
     sizeCacheMapRef.current = newCacheMap
 
     return result
-  }, [itemCardProps, items, ownerIsKnown, repoIsKnown])
+  }, [itemCardProps, items, ownerIsKnown, plan, repoIsKnown])
 
   const getItemSize = useCallback<
     NonNullable<OneListProps<any>['getItemSize']>
@@ -137,21 +174,9 @@ export function useCardsProps<ItemT extends EnhancedItem>({
       height: getItemSize(undefined, index),
       item,
     }))
-  }, [items])
+  }, [items, itemCardProps])
 
-  const itemSeparator = useMemo<
-    NonNullable<OneListProps<DataItemT<ItemT>>['itemSeparator']>
-  >(
-    () => ({
-      size: cardItemSeparatorSize,
-      Component: ({ leading }) => (
-        <CardItemSeparator
-          leadingItem={leading && leading.item && leading.item.item}
-        />
-      ),
-    }),
-    [cardItemSeparatorSize],
-  )
+  const itemSeparator = undefined
 
   const header = useMemo<OneListProps<DataItemT<ItemT>>['header']>(() => {
     return {
@@ -181,14 +206,25 @@ export function useCardsProps<ItemT extends EnhancedItem>({
     isEmpty: !(items && items.length > 0),
     refresh,
   }
+  const sticky = !!(
+    !fetchNextPage &&
+    cardsFooterProps.clearedAt &&
+    itemLayouts[itemLayouts.length - 1] &&
+    itemLayouts[itemLayouts.length - 1]!.offset +
+      itemLayouts[itemLayouts.length - 1]!.length <
+      windowHeight - ((header && header.size) || 0) - columnHeaderHeight
+  )
+
   const footer = useMemo<OneListProps<DataItemT<ItemT>>['footer']>(() => {
+    if (isOverMaxColumnLimit || isOverPlanColumnLimit) return undefined
+
     return {
       size: getCardsFooterSize({
         clearedAt: cardsFooterProps.clearedAt,
         hasFetchNextPage: !!cardsFooterProps.fetchNextPage,
         isEmpty: cardsFooterProps.isEmpty,
       }),
-      sticky: false,
+      sticky,
       Component: () => <CardsFooter {...cardsFooterProps} />,
     }
   }, [
@@ -197,6 +233,9 @@ export function useCardsProps<ItemT extends EnhancedItem>({
     cardsFooterProps.fetchNextPage,
     cardsFooterProps.isEmpty,
     cardsFooterProps.refresh,
+    isOverMaxColumnLimit,
+    isOverPlanColumnLimit,
+    sticky,
   ])
 
   const safeAreaInsets: OneListProps<
@@ -217,46 +256,95 @@ export function useCardsProps<ItemT extends EnhancedItem>({
   const refreshControl = useMemo(
     () => (
       <RefreshControl
-        intervalRefresh={lastFetchedAt}
+        intervalRefresh={lastFetchedSuccessfullyAt}
         onRefresh={refresh}
         refreshing={false}
         title={
-          lastFetchedAt
-            ? `Last updated ${getDateSmallText(lastFetchedAt, true)}`
+          lastFetchedSuccessfullyAt
+            ? `Last updated ${getDateSmallText(
+                lastFetchedSuccessfullyAt,
+                true,
+              )}`
             : 'Pull to refresh'
         }
       />
     ),
-    [lastFetchedAt, refresh],
+    [lastFetchedSuccessfullyAt, refresh],
   )
 
-  const isOverColumnLimit = !!(
-    columnIndex >= 0 && columnIndex + 1 > constants.COLUMNS_LIMIT
-  )
-  const OverrideRenderComponent = useMemo<
-    React.ComponentType | undefined
-  >(() => {
-    if (!column) return undefined
+  const OverrideRender = useMemo<{
+    Component: React.ComponentType | undefined
+    overlay?: boolean
+  }>(() => {
+    if (!(column && column.id)) return { Component: undefined, overlay: false }
 
-    if (isOverColumnLimit) {
-      return () => (
-        <EmptyCards
-          columnId={column.id}
-          errorMessage={`You have reached the limit of ${
-            constants.COLUMNS_LIMIT
-          } columns. This is to maintain a healthy usage of the GitHub API.`}
-          errorTitle="Too many columns"
-          fetchNextPage={undefined}
-          refresh={undefined}
-        />
-      )
+    if (isOverMaxColumnLimit) {
+      return {
+        Component: () => (
+          <EmptyCards
+            columnId={column.id}
+            errorMessage={`You have reached the limit of ${
+              constants.COLUMNS_LIMIT
+            } columns. This is to maintain a healthy usage of the GitHub API.`}
+            errorTitle="Too many columns"
+            fetchNextPage={undefined}
+            loadState="error"
+            refresh={undefined}
+          />
+        ),
+        overlay: false,
+      }
     }
 
-    return undefined
-  }, [column, isOverColumnLimit])
+    if (isOverPlanColumnLimit) {
+      return {
+        Component: () => (
+          <EmptyCards
+            columnId={column.id}
+            emoji="rocket"
+            errorButtonView={
+              <Button
+                analyticsLabel="unlock_more_columns_button"
+                children="Unlock more columns"
+                onPress={() => {
+                  const nextPlan = activePlans.find(
+                    p => p.featureFlags.columnsLimit > columnIndex + 1,
+                  )
+                  dispatch(
+                    actions.pushModal({
+                      name: 'PRICING',
+                      params: {
+                        highlightFeature: 'columnsLimit',
+                        initialSelectedPlanId: nextPlan && nextPlan.id,
+                      },
+                    }),
+                  )
+                }}
+              />
+            }
+            errorMessage={`You have exceeded the limit of ${
+              plan!.featureFlags.columnsLimit
+            } columns.`}
+            errorTitle="Limit exceeded"
+            fetchNextPage={undefined}
+            loadState="error"
+            refresh={undefined}
+          />
+        ),
+        overlay: true,
+      }
+    }
+
+    return { Component: undefined, overlay: false }
+  }, [
+    column && column.id,
+    columnIndex,
+    isOverMaxColumnLimit,
+    isOverPlanColumnLimit,
+  ])
 
   return {
-    OverrideRenderComponent,
+    OverrideRender,
     data,
     footer,
     getItemSize,

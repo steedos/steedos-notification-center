@@ -14,12 +14,12 @@ export const HOSTNAME =
 export const IS_BETA =
   APP_VERSION.includes('beta') || (!!HOSTNAME && HOSTNAME.includes('beta'))
 
-export const COLUMNS_LIMIT = 20
+export const COLUMNS_LIMIT = 25
 export const MIN_COLUMN_WIDTH = 300
 export const MAX_COLUMN_WIDTH = 340
 
 export const DISABLE_ANIMATIONS = false
-export const DISABLE_SWIPEABLE_CARDS = false
+export const DISABLE_SWIPEABLE_CARDS = true
 
 export const DEFAULT_DARK_THEME: ThemeName = 'dark-gray'
 export const DEFAULT_LIGHT_THEME: ThemeName = 'light-white'
@@ -37,14 +37,23 @@ export const LANDING_BASE_URL = 'https://devhubapp.com'
 export const APP_BASE_URL = 'https://app.devhubapp.com'
 export const DEVHUB_BETA_URL = 'https://beta.devhubapp.com'
 export const API_BASE_URL = 'https://api.devhubapp.com'
-export const SLACK_INVITE_LINK = 'https://slack.devhubapp.com'
 export const GRAPHQL_ENDPOINT = `${API_BASE_URL}/graphql`
+export const DEVHUB_LINKS = {
+  DOWNLOAD_PAGE: `${LANDING_BASE_URL}/download`,
+  PRICING_PAGE: `${LANDING_BASE_URL}/pricing`,
+  SUBSCRIBE_PAGE: `${LANDING_BASE_URL}/subscribe`,
+  SLACK_INVITATION: 'https://slack.devhubapp.com',
+  GITHUB_REPOSITORY: 'https://github.com/devhubapp/devhub',
+  TWITTER_PROFILE: 'https://twitter.com/devhubapp',
+}
 
 export const APP_DEEP_LINK_SCHEMA = 'devhub'
 export const APP_DEEP_LINK_URLS = {
   github_oauth: `${APP_DEEP_LINK_SCHEMA}://github/oauth`,
   preferences: `${APP_DEEP_LINK_SCHEMA}://preferences`,
-  redux_action: `${APP_DEEP_LINK_SCHEMA}://action`,
+  pricing: `${APP_DEEP_LINK_SCHEMA}://pricing`,
+  redux: `${APP_DEEP_LINK_SCHEMA}://redux`,
+  subscribe: `${APP_DEEP_LINK_SCHEMA}://subscribe`,
 }
 
 // prettier-ignore

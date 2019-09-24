@@ -18,6 +18,10 @@ import { ThemedIcon } from '../themed/ThemedIcon'
 import { ThemedText } from '../themed/ThemedText'
 import { ThemedView } from '../themed/ThemedView'
 import { BaseCardProps, sizes } from './BaseCard.shared'
+import {
+  CardItemSeparator,
+  cardItemSeparatorSize,
+} from './partials/CardItemSeparator'
 import { InstallGitHubAppText } from './partials/rows/InstallGitHubAppText'
 
 const styles = StyleSheet.create({
@@ -49,6 +53,9 @@ const styles = StyleSheet.create({
   avatar: {},
 
   iconContainer: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
     alignItems: 'center',
     alignContent: 'center',
     justifyContent: 'center',
@@ -58,25 +65,13 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
 
-  iconContainer__bottomLeft: {
-    position: 'absolute',
-    bottom: 0,
-    left: -sizes.iconContainerSize / 2,
-  },
-
-  iconContainer__bottomRight: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-  },
-
   icon: {
     marginTop: StyleSheet.hairlineWidth,
-    fontSize: PixelRatio.roundToNearestPixel(
-      sizes.iconContainerSize * (14 / sizes.iconContainerSize),
-    ),
     fontWeight: 'bold',
     textAlign: 'center',
+    fontSize: PixelRatio.roundToNearestPixel(
+      sizes.iconContainerSize * (sizes.iconSize / sizes.iconContainerSize),
+    ),
   },
 
   title: {
@@ -168,11 +163,12 @@ export const BaseCard = React.memo((props: BaseCardProps) => {
     avatar,
     date,
     githubApp,
+    height,
     icon,
     id,
-    isPrivate,
     isRead,
     link,
+    showPrivateLock,
     subitems,
     subtitle,
     text,
@@ -190,15 +186,21 @@ export const BaseCard = React.memo((props: BaseCardProps) => {
   return (
     <View
       key={`base-card-container-${type}-${id}-inner`}
-      style={styles.container}
+      style={[styles.container, { height }]}
     >
-      <View style={styles.innerContainer}>
+      <View
+        style={[
+          styles.innerContainer,
+          { height: height - cardItemSeparatorSize },
+        ]}
+      >
         {!!(action && action.text) && (
           <>
             <View style={styles.actionContainer}>
               <View style={styles.smallAvatarContainer}>
                 <Avatar
                   avatarUrl={action.avatar.imageURL}
+                  disableLink={action.avatar.linkURL === link}
                   linkURL={action.avatar.linkURL}
                   style={styles.avatar}
                   size={smallAvatarSize}
@@ -224,6 +226,7 @@ export const BaseCard = React.memo((props: BaseCardProps) => {
           <View style={styles.avatarContainer}>
             <Avatar
               avatarUrl={avatar.imageURL}
+              disableLink={avatar.linkURL === link}
               linkURL={avatar.linkURL}
               style={styles.avatar}
               size={avatarSize}
@@ -232,7 +235,7 @@ export const BaseCard = React.memo((props: BaseCardProps) => {
             <ThemedView
               backgroundColor={backgroundThemeColor}
               borderColor={backgroundThemeColor}
-              style={[styles.iconContainer, styles.iconContainer__bottomRight]}
+              style={styles.iconContainer}
             >
               <ThemedIcon
                 name={icon.name}
@@ -247,7 +250,7 @@ export const BaseCard = React.memo((props: BaseCardProps) => {
 
           <Spacer width={sizes.horizontalSpaceSize} />
 
-          <View style={sharedStyles.flex}>
+          <View style={[sharedStyles.flex, sharedStyles.alignSelfCenter]}>
             <Spacer height={sizes.rightInnerTopSpacing} />
 
             <View style={sharedStyles.horizontalAndVerticallyAligned}>
@@ -277,6 +280,16 @@ export const BaseCard = React.memo((props: BaseCardProps) => {
                       >
                         {dateText}
                       </ThemedText>
+
+                      {!!showPrivateLock && (
+                        <>
+                          <Text children="  " />
+                          <ThemedIcon
+                            name="lock"
+                            color="foregroundColorMuted65"
+                          />
+                        </>
+                      )}
                     </>
                   )
                 }}
@@ -299,11 +312,6 @@ export const BaseCard = React.memo((props: BaseCardProps) => {
                 numberOfLines={1}
                 style={styles.text}
               >
-                {!!isPrivate && (
-                  <>
-                    <ThemedIcon name="lock" />{' '}
-                  </>
-                )}
                 {text}
               </ThemedText>
             )}
@@ -320,6 +328,7 @@ export const BaseCard = React.memo((props: BaseCardProps) => {
                   {subitem.avatar && subitem.avatar.imageURL && (
                     <Avatar
                       avatarUrl={subitem.avatar.imageURL}
+                      disableLink={subitem.avatar.linkURL === link}
                       linkURL={subitem.avatar.linkURL}
                       style={styles.avatar}
                       size={smallAvatarSize}
@@ -363,6 +372,8 @@ export const BaseCard = React.memo((props: BaseCardProps) => {
           </>
         )}
       </View>
+
+      <CardItemSeparator muted={isRead} />
     </View>
   )
 })

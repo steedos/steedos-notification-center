@@ -55,8 +55,14 @@ a [data-touchable] {
   cursor: pointer;
 }
 
+[data-switch="true"][data-switch-disabled="true"],
 [data-touchable="true"][data-touchable-disabled="true"] {
   cursor: not-allowed;
+}
+
+[data-touchable="true"][data-touchable-disabled="false"][data-touchable-onpress="true"] > [data-touchable="true"][data-touchable-disabled="true"],
+a > [data-touchable="true"][data-touchable-disabled="true"] {
+  cursor: unset;
 }
 
 [data-card-link="true"]:focus {
@@ -67,4 +73,8 @@ a [data-touchable] {
 /* https://github.com/necolas/react-native-web/issues/1299 */
 [data-paging-enabled-fix="true"]  > div > div > div {
   height: 100%;
+}
+
+.StripeElement {
+  align-self: stretch;
 }

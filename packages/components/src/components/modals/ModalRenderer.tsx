@@ -1,8 +1,8 @@
+import { constants, ModalPayloadWithIndex } from '@devhub/core'
 import React, { useEffect } from 'react'
 import { BackHandler, Dimensions, StyleSheet, View } from 'react-native'
-
-import { constants, ModalPayloadWithIndex } from '@devhub/core'
 import { useTransition } from 'react-spring/native'
+
 import { SettingsModal } from '../../components/modals/SettingsModal'
 import { usePrevious } from '../../hooks/use-previous'
 import { useReduxAction } from '../../hooks/use-redux-action'
@@ -24,13 +24,18 @@ import { AddColumnModal } from './AddColumnModal'
 import { AdvancedSettingsModal } from './AdvancedSettingsModal'
 import { EnterpriseSetupModal } from './EnterpriseSetupModal'
 import { KeyboardShortcutsModal } from './KeyboardShortcutsModal'
+import { PricingModal } from './PricingModal'
+import { SubscribedModal } from './SubscribedModal'
+import { SubscribeModal } from './SubscribeModal'
 
 function renderModal(modal: ModalPayloadWithIndex) {
   if (!modal) return null
 
   switch (modal.name) {
     case 'ADD_COLUMN':
-      return <AddColumnModal showBackButton={modal.index >= 1} />
+      return (
+        <AddColumnModal showBackButton={modal.index >= 1} {...modal.params} />
+      )
 
     case 'ADD_COLUMN_DETAILS':
       return (
@@ -41,16 +46,48 @@ function renderModal(modal: ModalPayloadWithIndex) {
       )
 
     case 'ADVANCED_SETTINGS':
-      return <AdvancedSettingsModal showBackButton={modal.index >= 1} />
+      return (
+        <AdvancedSettingsModal
+          showBackButton={modal.index >= 1}
+          {...modal.params}
+        />
+      )
 
     case 'KEYBOARD_SHORTCUTS':
-      return <KeyboardShortcutsModal showBackButton={modal.index >= 1} />
+      return (
+        <KeyboardShortcutsModal
+          showBackButton={modal.index >= 1}
+          {...modal.params}
+        />
+      )
+
+    case 'PRICING':
+      return (
+        <PricingModal showBackButton={modal.index >= 1} {...modal.params} />
+      )
 
     case 'SETTINGS':
-      return <SettingsModal showBackButton={modal.index >= 1} />
+      return (
+        <SettingsModal showBackButton={modal.index >= 1} {...modal.params} />
+      )
 
     case 'SETUP_GITHUB_ENTERPRISE':
-      return <EnterpriseSetupModal showBackButton={modal.index >= 1} />
+      return (
+        <EnterpriseSetupModal
+          showBackButton={modal.index >= 1}
+          {...modal.params}
+        />
+      )
+
+    case 'SUBSCRIBE':
+      return (
+        <SubscribeModal showBackButton={modal.index >= 1} {...modal.params} />
+      )
+
+    case 'SUBSCRIBED':
+      return (
+        <SubscribedModal showBackButton={modal.index >= 1} {...modal.params} />
+      )
 
     default:
       return null
@@ -69,6 +106,7 @@ export function ModalRenderer(props: ModalRendererProps) {
 
   const columnIds = useReduxState(selectors.columnIdsSelector)
   const modalStack = useReduxState(selectors.modalStack)
+  const previousModalStack = usePrevious(modalStack)
   const currentOpenedModal = useReduxState(selectors.currentOpenedModal)
   const previouslyOpenedModal = usePrevious(currentOpenedModal)
 
@@ -113,12 +151,12 @@ export function ModalRenderer(props: ModalRendererProps) {
   const size = columnWidth + (renderSeparator ? separatorThickSize : 0)
 
   const overlayTransition = useTransition<boolean, any>(
-    currentOpenedModal && sizename > '2-medium' ? [true] : [],
+    currentOpenedModal ? [true] : [],
     () => 'modal-overlay',
     {
       reset: false,
       unique: true,
-      immediate,
+      immediate: immediate || sizename <= '2-medium',
       config: getDefaultReactSpringAnimationConfig({ precision: 0.01 }),
       from: { opacity: 0 },
       enter: { opacity: 0.75 },
@@ -152,20 +190,29 @@ export function ModalRenderer(props: ModalRendererProps) {
           }
         : {
             from: (item: ModalPayloadWithIndex) =>
-              (item.index === 0 && modalStack.length) ||
+              (item.index === 0 &&
+                modalStack.length &&
+                !previouslyOpenedModal) ||
               (item.index > 0 && !modalStack.length)
                 ? { left: -size }
                 : { left: size },
             enter: { left: 0 },
             update: (item: ModalPayloadWithIndex) =>
-              modalStack.length > 1 && item.index !== modalStack.length - 1
+              item.index !== modalStack.length - 1
                 ? { left: -size / 3 }
                 : { left: 0 },
 
             leave: (item: ModalPayloadWithIndex) =>
-              item.index === 0 || !modalStack.length
-                ? { left: -size }
-                : { left: size },
+              item.index >= modalStack.length &&
+              modalStack.length &&
+              previouslyOpenedModal &&
+              previouslyOpenedModal.name === item.name &&
+              previousModalStack &&
+              previousModalStack[0] &&
+              previousModalStack[0].name ===
+                (modalStack[0] && modalStack[0].name)
+                ? { left: size }
+                : { left: -size },
           }),
     },
   )

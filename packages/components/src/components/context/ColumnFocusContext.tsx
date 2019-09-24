@@ -1,6 +1,5 @@
 import React, { useContext, useEffect, useRef } from 'react'
 
-import { InteractionManager } from 'react-native'
 import { useEmitter } from '../../hooks/use-emitter'
 import { useForceRerender } from '../../hooks/use-force-rerender'
 import { useReduxState } from '../../hooks/use-redux-state'
@@ -57,16 +56,14 @@ export function ColumnFocusProvider(props: ColumnFocusProviderProps) {
   }
 
   useEffect(() => {
-    InteractionManager.runAfterInteractions(() => {
-      if (valueRef.current.focusedColumnId !== fixedFocusedColumnId) return
+    if (valueRef.current.focusedColumnId !== fixedFocusedColumnId) return
 
-      emitter.emit('FOCUS_ON_COLUMN', {
-        animated: false,
-        columnId: fixedFocusedColumnId,
-        focusOnVisibleItem: false,
-        highlight: false,
-        scrollTo: false,
-      })
+    emitter.emit('FOCUS_ON_COLUMN', {
+      animated: false,
+      columnId: fixedFocusedColumnId,
+      focusOnVisibleItem: false,
+      highlight: false,
+      scrollTo: false,
     })
   }, [])
 
@@ -127,6 +124,23 @@ export function ColumnFocusProvider(props: ColumnFocusProviderProps) {
 
   useEmitter(
     'FOCUS_ON_COLUMN_ITEM',
+    payload => {
+      if (valueRef.current.focusedColumnId === (payload.columnId || null))
+        return
+
+      emitter.emit('FOCUS_ON_COLUMN', {
+        animated: false,
+        columnId: payload.columnId || '',
+        focusOnVisibleItem: false,
+        highlight: false,
+        scrollTo: false,
+      })
+    },
+    [],
+  )
+
+  useEmitter(
+    'SCROLL_TOP_COLUMN',
     payload => {
       if (valueRef.current.focusedColumnId === (payload.columnId || null))
         return

@@ -4,6 +4,7 @@ export interface GitHubURLOptions {
   addBottomAnchor?: boolean
   baseURL?: string
   commentId?: number
+  commentIsInline?: boolean
   issueOrPullRequestNumber?: number
 }
 
@@ -85,14 +86,26 @@ export function getReleaseIdFromUrl(url: string) {
 
 export const getBaseUrlFromOtherUrl = (
   url: string | undefined,
-): string | undefined =>
-  url
-    ? (
-        (url.match(
-          /([^:]+:\/\/[^\/]+)(\/(repos\/)?)([a-zA-Z0-9\-._]+\/[a-zA-Z0-9\-._]+[^/#$]?)/i,
-        ) || [])[1] || ''
-      ).replace('/api.', '/') || undefined
-    : undefined
+): string | undefined => {
+  if (!(url && typeof url === 'string')) return undefined
+
+  return (
+    (
+      (url.match(
+        /([^:]+:\/\/[^\/]+)(\/(repos\/)?)([a-zA-Z0-9\-._]+\/[a-zA-Z0-9\-._]+[^/#$]?)/i,
+      ) || [])[1] || ''
+    ).replace('/api.', '/') || undefined
+  )
+}
+
+export const getBaseAPIUrlFromOtherAPIUrl = (
+  apiURL: string | undefined,
+): string | undefined => {
+  if (!(apiURL && typeof apiURL === 'string')) return undefined
+
+  const matches = apiURL.match(/([^:]+:\/\/[^\/]+)/i)
+  return (matches && matches[0]) || undefined
+}
 
 export const getRepoFullNameFromUrl = (url: string): string | undefined =>
   url
@@ -180,14 +193,8 @@ export const getGitHubURLForRepoInvitation = (
 ) =>
   ownerName && repoName ? `${baseURL}/${ownerName}/${repoName}/invitations` : ''
 
-export const getGitHubURLForSecurityAlert = (
-  ownerName: string,
-  repoName: string,
-  { baseURL = defaultBaseURL }: { baseURL?: string } = {},
-) =>
-  ownerName && repoName
-    ? `${baseURL}/${ownerName}/${repoName}/network/alerts`
-    : ''
+export const getGitHubURLForSecurityAlert = (repoURL: string | undefined) =>
+  repoURL ? `${repoURL}/network/alerts` : undefined
 
 export const getGitHubAvatarURLFromPayload = (
   payload: any,
@@ -227,6 +234,7 @@ export function githubHTMLUrlFromAPIUrl(
     addBottomAnchor,
     baseURL = defaultBaseURL,
     commentId,
+    commentIsInline,
     issueOrPullRequestNumber,
   }: GitHubURLOptions = {},
 ): string | undefined {
@@ -250,9 +258,9 @@ export function githubHTMLUrlFromAPIUrl(
 
         case 'commits': {
           if (commentId) {
-            return `${baseURL}/${repoFullName}/commit/${
-              restOfURL2[0]
-            }#commitcomment-${commentId}`
+            return `${baseURL}/${repoFullName}/commit/${restOfURL2[0]}#${
+              commentIsInline ? 'r' : 'commitcomment-'
+            }${commentId}`
           }
 
           return `${baseURL}/${repoFullName}/commit/${restOfURL2.join('/')}`
@@ -274,8 +282,9 @@ export function githubHTMLUrlFromAPIUrl(
             issueOrPullRequestNumber &&
             (commentId || (restOfURL2[0] === 'comments' && restOfURL2[1]))
           ) {
-            return `${baseURL}/${repoFullName}/pull/${issueOrPullRequestNumber}#discussion_r${commentId ||
-              restOfURL2[1]}`
+            return `${baseURL}/${repoFullName}/pull/${issueOrPullRequestNumber}#${
+              commentIsInline ? 'discussion_r' : 'issuecomment-'
+            }${commentId || restOfURL2[1]}`
           }
 
           return `${baseURL}/${repoFullName}/pull/${restOfURL2.join('/')}`
@@ -310,6 +319,9 @@ export function fixURLForPlatform(
 
   if (uri.indexOf('api.github.com') >= 0)
     uri = githubHTMLUrlFromAPIUrl(uri, isMobile, options)
+
+  if (options && options.commentIsInline && uri)
+    uri = uri.replace('commitcomment-', 'r')
 
   return options && options.addBottomAnchor && uri
     ? appBottomAnchorIfPossible(uri, isMobile)

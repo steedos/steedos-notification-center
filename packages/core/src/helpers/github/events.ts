@@ -26,6 +26,7 @@ import {
   GitHubUser,
   MultipleStarEvent,
   ThemeColors,
+  UserPlan,
 } from '../../types'
 import { constants } from '../../utils'
 import { isEventPrivate } from '../shared'
@@ -104,6 +105,7 @@ export function getEventMetadata(
   options:
     | {
         appendColon?: boolean
+        commitIsKnown?: boolean
         includeBranch?: boolean
         includeFork?: boolean
         includeRepo?: boolean
@@ -121,6 +123,7 @@ export function getEventMetadata(
 } {
   const {
     appendColon,
+    commitIsKnown,
     includeBranch,
     includeFork,
     includeRepo,
@@ -286,12 +289,22 @@ export function getEventMetadata(
             event.payload.pages[0] &&
             event.payload.pages[0].action
         ) {
-          case 'created':
+          case 'created': {
             return {
               action: 'created',
               actionText: `Created ${pagesText}${colonText}`,
               subjectType: 'Wiki',
             }
+          }
+
+          case 'edited': {
+            return {
+              action: 'updated',
+              actionText: `Edited ${pagesText}${colonText}`,
+              subjectType: 'Wiki',
+            }
+          }
+
           default:
             return {
               action: 'updated',
@@ -400,7 +413,7 @@ export function getEventMetadata(
           action: 'added',
           actionText:
             includeUser && username
-              ? `Added ${username} to ${repositoryTextWithColon}`
+              ? `Added @${username} to ${repositoryTextWithColon}`
               : `Added a user to ${repositoryTextWithColon}`,
           subjectType: 'User',
         }
@@ -542,7 +555,12 @@ export function getEventMetadata(
 
         const branch = getNameFromRef(event.payload.ref)
         const pushedText = event.forced ? 'Force pushed' : 'Pushed'
-        const commitText = count > 1 ? ` ${count} commits` : ' a commit'
+        const commitText =
+          count > 1
+            ? ` ${count} commits`
+            : commitIsKnown
+            ? ' this commit'
+            : ' a commit'
         const branchText = includeBranch && branch ? ` to ${branch}` : ''
 
         return {
@@ -915,7 +933,10 @@ export function mergeEventPreservingEnhancement(
   })
 }
 
-export function getGitHubEventSubItems(event: EnhancedGitHubEvent) {
+export function getGitHubEventSubItems(
+  event: EnhancedGitHubEvent,
+  { plan }: { plan: UserPlan | null | undefined },
+) {
   const {
     actor,
     payload,
@@ -1004,6 +1025,14 @@ export function getGitHubEventSubItems(event: EnhancedGitHubEvent) {
   const isForcePush = isPush && (payload as GitHubPushEvent).forced
   const isPrivate = isEventPrivate(event)
 
+  const canSee =
+    !isPrivate ||
+    !!(
+      plan &&
+      (plan.status === 'active' || plan.status === 'trialing') &&
+      plan.featureFlags.enablePrivateRepositories
+    )
+
   const isBot = getItemIsBot('activity', event)
 
   // GitHub returns the wrong avatar_url for app bots on actor.avatar_url,
@@ -1019,6 +1048,7 @@ export function getGitHubEventSubItems(event: EnhancedGitHubEvent) {
     actor,
     avatarUrl,
     branchOrTagName,
+    canSee,
     comment,
     commitShas,
     commits,

@@ -1,13 +1,15 @@
 import _ from 'lodash'
 import { StyleSheet } from 'react-native'
 
-import { contentPadding, mutedOpacity } from './variables'
+import { contentPadding, mutedOpacity, superMutedOpacity } from './variables'
 
 export const sharedStyles = StyleSheet.create({
   absolute: { position: 'absolute' },
+  absoluteFill: StyleSheet.absoluteFillObject,
   relative: { position: 'relative' },
   flex: { flex: 1 },
   flexGrow: { flexGrow: 1 },
+  flexNoGrow: { flexGrow: 0 },
   flexWrap: { flexWrap: 'wrap' },
   flexNoWrap: { flexWrap: 'nowrap' },
   horizontal: { flexDirection: 'row' },
@@ -39,6 +41,7 @@ export const sharedStyles = StyleSheet.create({
   marginVertical: { marginVertical: contentPadding },
   marginVerticalHalf: { marginVertical: contentPadding / 2 },
   muted: { opacity: mutedOpacity },
+  superMuted: { opacity: superMutedOpacity },
   opacity0: { opacity: 0 },
   opacity100: { opacity: 1 },
   overflowHidden: { overflow: 'hidden' },

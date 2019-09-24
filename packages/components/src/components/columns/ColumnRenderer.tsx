@@ -2,12 +2,15 @@ import React, { useCallback, useRef } from 'react'
 import { StyleSheet, View } from 'react-native'
 
 import {
+  cheapestPlanWithNotifications,
   Column as ColumnT,
   columnHasAnyFilter,
+  constants,
   EnhancedGitHubEvent,
   EnhancedGitHubIssueOrPullRequest,
   EnhancedGitHubNotification,
   EnhancedItem,
+  formatPrice,
   getDefaultPaginationPerPage,
   GitHubIcon,
   isEventPrivate,
@@ -25,7 +28,10 @@ import * as actions from '../../redux/actions'
 import * as selectors from '../../redux/selectors'
 import { sharedStyles } from '../../styles/shared'
 import { contentPadding } from '../../styles/variables'
-import { FreeTrialHeaderMessage } from '../common/FreeTrialHeaderMessage'
+import {
+  FreeTrialHeaderMessage,
+  FreeTrialHeaderMessageProps,
+} from '../common/FreeTrialHeaderMessage'
 import { useAppLayout } from '../context/LayoutContext'
 import { Column } from './Column'
 import { ColumnFiltersRenderer } from './ColumnFiltersRenderer'
@@ -111,7 +117,10 @@ export const ColumnRenderer = React.memo((props: ColumnRendererProps) => {
   const columnOptionsRef = useRef<ColumnOptionsAccordion>(null)
   const { appOrientation } = useAppLayout()
   const { appViewMode } = useAppViewMode()
-  const { filteredItems } = useColumnData(columnId, { mergeSimilar: false })
+  const { hasCrossedColumnsLimit, filteredItems } = useColumnData(columnId, {
+    mergeSimilar: false,
+  })
+  const columnsCount = useReduxState(selectors.columnCountSelector)
   const plan = useReduxState(selectors.currentUserPlanSelector)
   const dispatch = useDispatch()
   const store = useStore()
@@ -127,27 +136,45 @@ export const ColumnRenderer = React.memo((props: ColumnRendererProps) => {
     },
   )
 
-  const hasValidPaidPlan =
+  const showBannerForPaidFeature: FreeTrialHeaderMessageProps | undefined =
     plan &&
-    plan.amount > 0 &&
-    (plan.status === 'active' || plan.status === 'trialing')
-
-  const showFreeTrialBanner =
-    ((!hasValidPaidPlan ||
-      (plan && !plan.featureFlags.enablePrivateRepositories)) &&
-      (columnType === 'activity'
-        ? (filteredItems as any[]).some((item: EnhancedGitHubEvent) =>
-            isEventPrivate(item),
-          )
-        : columnType === 'notifications'
-        ? (filteredItems as any[]).some(
-            (item: EnhancedGitHubNotification) =>
-              isNotificationPrivate(item) && !!item.enhanced,
-          )
-        : false)) || // TODO: Handle for IssueOrPullRequest Column
-    (plan &&
-      plan.featureFlags.columnsLimit >= 1 &&
-      plan.featureFlags.columnsLimit < columnIndex + 1)
+    plan.featureFlags.columnsLimit >= 1 &&
+    columnIndex + 1 > plan.featureFlags.columnsLimit
+      ? columnIndex + 1 === plan.featureFlags.columnsLimit &&
+        columnIndex + 1 === columnsCount &&
+        columnIndex + 1 <= constants.COLUMNS_LIMIT
+        ? {
+            message: 'Columns limit reached. Tap for more.',
+            relatedFeature: 'columnsLimit',
+          }
+        : undefined
+      : (!(
+          plan &&
+          (plan.status === 'active' || plan.status === 'trialing') &&
+          plan.featureFlags.enablePrivateRepositories
+        ) &&
+          (columnType === 'activity'
+            ? (filteredItems as any[]).some((item: EnhancedGitHubEvent) =>
+                isEventPrivate(item),
+              )
+            : columnType === 'notifications'
+            ? (filteredItems as any[]).some(
+                (item: EnhancedGitHubNotification) =>
+                  isNotificationPrivate(item) && !!item.enhanced,
+              )
+            : // TODO: Handle for IssueOrPullRequest Column
+              undefined) && {
+            message:
+              cheapestPlanWithNotifications &&
+              cheapestPlanWithNotifications.amount
+                ? `Unlock private repos for ${formatPrice(
+                    cheapestPlanWithNotifications.amount,
+                    cheapestPlanWithNotifications.currency,
+                  )}/${cheapestPlanWithNotifications.interval}`
+                : 'Tap to unlock Private Repositories',
+            relatedFeature: 'enablePrivateRepositories',
+          }) ||
+        undefined
 
   const refresh = useCallback(() => {
     dispatch(
@@ -200,6 +227,7 @@ export const ColumnRenderer = React.memo((props: ColumnRendererProps) => {
     >
       <ColumnHeader
         key={`column-renderer-${columnId}-header`}
+        columnId={columnId}
         title={title}
         subtitle={subtitle}
         style={{ paddingRight: contentPadding / 2 }}
@@ -213,6 +241,7 @@ export const ColumnRenderer = React.memo((props: ColumnRendererProps) => {
               analyticsLabel={
                 clearableItems.length ? 'clear_column' : 'unclear_column'
               }
+              disabled={hasCrossedColumnsLimit || !clearableItems.length}
               name="check"
               onPress={() => {
                 dispatch(
@@ -228,12 +257,7 @@ export const ColumnRenderer = React.memo((props: ColumnRendererProps) => {
 
                 if (!clearableItems.length) refresh()
               }}
-              style={{
-                opacity: clearableItems.length ? 1 : 0.5,
-              }}
-              tooltip={
-                clearableItems.length ? 'Clear items' : 'Show cleared items'
-              }
+              tooltip="Clear items"
             />
 
             <ColumnHeader.Button
@@ -241,7 +265,7 @@ export const ColumnRenderer = React.memo((props: ColumnRendererProps) => {
               analyticsLabel={
                 !hasOneUnreadItem ? 'mark_as_unread' : 'mark_as_read'
               }
-              disabled={!filteredItems.length}
+              disabled={hasCrossedColumnsLimit || !filteredItems.length}
               name={!hasOneUnreadItem ? 'mail-read' : 'mail'}
               onPress={() => {
                 const unread = !hasOneUnreadItem
@@ -352,7 +376,9 @@ export const ColumnRenderer = React.memo((props: ColumnRendererProps) => {
         type="local"
       />
 
-      {!!showFreeTrialBanner && <FreeTrialHeaderMessage />}
+      {!!showBannerForPaidFeature && (
+        <FreeTrialHeaderMessage {...showBannerForPaidFeature} />
+      )}
     </Column>
   )
 })

@@ -191,6 +191,7 @@ export const OneList = (React.memo(
   React.forwardRef<OneListInstance, OneListProps<any>>((props, ref) => {
     const {
       ListEmptyComponent,
+      containerStyle,
       data,
       estimatedItemSize,
       footer,
@@ -199,6 +200,7 @@ export const OneList = (React.memo(
       header,
       horizontal,
       itemSeparator,
+      listStyle,
       onVisibleItemsChanged,
       overscanCount,
       pagingEnabled,
@@ -214,7 +216,8 @@ export const OneList = (React.memo(
       () => ({
         scrollToStart: () => {
           try {
-            variableSizeListRef.current!.scrollTo(0)
+            if (!variableSizeListRef.current) return
+            variableSizeListRef.current.scrollTo(0)
           } catch (error) {
             console.error(error)
             bugsnag.notify(error)
@@ -222,7 +225,8 @@ export const OneList = (React.memo(
         },
         scrollToEnd: () => {
           try {
-            variableSizeListRef.current!.scrollToItem(data.length - 1, 'start')
+            if (!variableSizeListRef.current) return
+            variableSizeListRef.current.scrollToItem(data.length - 1, 'start')
           } catch (error) {
             console.error(error)
             bugsnag.notify(error)
@@ -231,7 +235,8 @@ export const OneList = (React.memo(
         scrollToIndex: (index, params) => {
           try {
             const alignment = params ? params.alignment : 'smart'
-            variableSizeListRef.current!.scrollToItem(index, alignment)
+            if (!variableSizeListRef.current) return
+            variableSizeListRef.current.scrollToItem(index, alignment)
           } catch (error) {
             console.error(error)
             bugsnag.notify(error)
@@ -380,14 +385,14 @@ export const OneList = (React.memo(
       }
     }, [itemCount, itemSize, previousItemCount, previousItemSize])
 
-    const style = useMemo(
+    const style = useMemo<VariableSizeListProps['style']>(
       () =>
         pagingEnabled
           ? {
               scrollSnapType: horizontal ? 'x mandatory' : 'y mandatory',
             }
           : undefined,
-      [pagingEnabled, horizontal],
+      [horizontal, listStyle, pagingEnabled],
     )
 
     const itemData = useMemo<ItemData>(
@@ -426,6 +431,7 @@ export const OneList = (React.memo(
           sharedStyles.flex,
           sharedStyles.fullWidth,
           sharedStyles.fullHeight,
+          containerStyle,
         ]}
       >
         {header &&
@@ -440,6 +446,7 @@ export const OneList = (React.memo(
             sharedStyles.flex,
             sharedStyles.fullWidth,
             sharedStyles.fullHeight,
+            listStyle,
           ]}
         >
           {data.length > 0 ? (

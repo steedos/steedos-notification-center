@@ -4,6 +4,9 @@ export type EventEmitter = EventEmitter
 export type EventSubscription = EventSubscription
 
 export interface EmitterTypes {
+  DEEP_LINK: {
+    url: string
+  }
   FOCUS_ON_COLUMN: {
     animated?: boolean
     columnId: string
@@ -29,6 +32,7 @@ export interface EmitterTypes {
     scrollTo?: boolean
   }
   PRESSED_KEYBOARD_SHORTCUT: { keys: string[] }
+  SCROLL_TOP_COLUMN: { columnId: string }
   SCROLL_DOWN_COLUMN: { columnId: string; columnIndex: number }
   SCROLL_UP_COLUMN: { columnId: string; columnIndex: number }
   TOGGLE_COLUMN_FILTERS: { columnId: string }

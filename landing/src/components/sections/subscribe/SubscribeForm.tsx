@@ -104,6 +104,8 @@ export const SubscribeForm = injectStripe<SubscribeFormProps>(
                   currentPeriodStartAt
                   currentPeriodEndAt
 
+                  reason
+
                   featureFlags {
                     columnsLimit
                     enableFilters
@@ -220,7 +222,7 @@ export const SubscribeForm = injectStripe<SubscribeFormProps>(
           loading={formState.isSubmiting}
           onClick={handleSubmit}
         >
-          {`Subscribe for ${formatPrice(plan.amount, plan.currency)}/${
+          {`Unlock for ${formatPrice(plan.amount, plan.currency)}/${
             plan.interval
           }`}
         </Button>
