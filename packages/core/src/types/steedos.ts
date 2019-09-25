@@ -1,4 +1,10 @@
-import { BaseColumn, BaseColumnFilters, ColumnSubscriptionData } from './devhub'
+import {
+  BaseColumn,
+  BaseColumnFilters,
+  ColumnSubscriptionData,
+  GenericColumnCreation,
+  GenericColumnSubscriptionCreation,
+} from './devhub'
 
 export interface SteedosUser {
   id: string | number
@@ -101,9 +107,13 @@ export interface SteedosObjectColumnFilters extends BaseColumnFilters {
 
 export interface SteedosObjectColumn extends BaseColumn {
   id: string
-  type: 'issue_or_pr'
+  type: 'steedos_object'
   filters?: SteedosObjectColumnFilters
 }
+
+export type SteedosObjectColumnCreation = GenericColumnCreation<
+  SteedosObjectColumn
+>
 
 export interface SteedosObjectColumnSubscription {
   id: string
@@ -121,3 +131,7 @@ export interface SteedosObjectColumnSubscription {
   createdAt: string
   updatedAt: string
 }
+
+export type SteedosObjectColumnSubscriptionCreation = GenericColumnSubscriptionCreation<
+  SteedosObjectColumnSubscription
+>

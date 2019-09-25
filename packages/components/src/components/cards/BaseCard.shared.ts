@@ -763,6 +763,79 @@ function _getCardPropsForItem(
       }
     }
 
+    case 'steedos_object': {
+      const issueOrPullRequest = item as EnhancedGitHubIssueOrPullRequest
+      const {
+        canSee,
+        iconDetails,
+        isPrivate,
+        isRead,
+        repoFullName,
+        repoOwnerName,
+      } = getGitHubIssueOrPullRequestSubItems(issueOrPullRequest, { plan })
+
+      const avatar: BaseCardProps['avatar'] = ownerIsKnown
+        ? {
+            imageURL: getUserAvatarFromObject(
+              issueOrPullRequest.user,
+              {},
+              PixelRatio.getPixelSizeForLayoutSize,
+            )!,
+            linkURL: getUserURLFromObject(issueOrPullRequest.user)!,
+          }
+        : {
+            imageURL: getUserAvatarByUsername(
+              repoOwnerName || '',
+              {
+                baseURL: getBaseUrlFromOtherUrl(
+                  issueOrPullRequest.html_url || issueOrPullRequest.url,
+                ),
+              },
+              PixelRatio.getPixelSizeForLayoutSize,
+            ),
+            linkURL: getRepoUrlFromOtherUrl(
+              issueOrPullRequest.html_url || issueOrPullRequest.url,
+            )!,
+          }
+
+      const date =
+        issueOrPullRequest.updated_at || issueOrPullRequest.created_at
+
+      const icon = { name: iconDetails.icon, color: iconDetails.color }
+
+      if (isPrivate && !canSee) {
+        return getPrivateBannerCardProps(type, item, {
+          avatar,
+          date,
+          iconColor: icon.color,
+        })
+      }
+
+      return {
+        action: undefined,
+        avatar,
+        date,
+        icon,
+        id,
+        isRead,
+        link: fixURL(issueOrPullRequest.html_url, {
+          addBottomAnchor: issueOrPullRequest.comments > 0,
+          issueOrPullRequestNumber: issueOrPullRequest.number,
+        })!,
+        showPrivateLock: isPrivate,
+        subitems: undefined,
+        subtitle: undefined,
+        text: getRepoText({
+          repoFullName,
+          ownerIsKnown,
+          repoIsKnown,
+          issueOrPullRequestNumber: issueOrPullRequest.number,
+        }),
+        title: issueOrPullRequest.title,
+        type,
+      }
+    }
+
     case 'notifications': {
       const notification = item as EnhancedGitHubNotification
 
@@ -1160,6 +1233,49 @@ export function getCardPushNotificationItem(
     }
 
     case 'issue_or_pr': {
+      const issueOrPullRequest = item as EnhancedGitHubIssueOrPullRequest
+
+      const repoURL =
+        issueOrPullRequest.repository_url ||
+        getRepoUrlFromOtherUrl(
+          issueOrPullRequest.html_url || issueOrPullRequest.url,
+        )
+      const repoFullName = getRepoFullNameFromUrl(
+        repoURL || issueOrPullRequest.url || issueOrPullRequest.html_url,
+      )
+
+      return {
+        title: trimNewLinesAndSpaces(issueOrPullRequest.title, 80),
+        subtitle: undefined,
+        body: [
+          getRepoText({
+            repoFullName,
+            ownerIsKnown: false,
+            repoIsKnown: false,
+            issueOrPullRequestNumber: issueOrPullRequest.number,
+          })!,
+          getIssueOrPullRequestState(issueOrPullRequest)
+            ? `Status: ${getIssueOrPullRequestState(issueOrPullRequest)} ${
+                isPullRequest(issueOrPullRequest)
+                  ? isDraft(issueOrPullRequest as GitHubPullRequest)
+                    ? 'draft pull request'
+                    : 'pull request'
+                  : 'issue'
+              }`
+            : '',
+        ]
+          .filter(Boolean)
+          .join('\n'),
+        imageURL: getUserAvatarByAvatarURL(
+          cardProps.avatar.imageURL,
+          { size: notificationSize },
+          PixelRatio.getPixelSizeForLayoutSize,
+        ),
+        onClickDispatchAction,
+      }
+    }
+
+    case 'steedos_object': {
       const issueOrPullRequest = item as EnhancedGitHubIssueOrPullRequest
 
       const repoURL =

@@ -30,7 +30,6 @@ const schemaResolvers = {
 const schema = makeExecutableSchema({
   typeDefs: schemaConfig,
   resolvers: schemaResolvers,
-  resolverValidationOptions: { requireResolversForResolveType: false },
 })
 
 export default schema

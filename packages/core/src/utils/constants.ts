@@ -38,7 +38,7 @@ export const APP_BASE_URL = 'https://app.devhubapp.com'
 export const DEVHUB_BETA_URL = 'https://beta.devhubapp.com'
 export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL
   ? process.env.REACT_APP_API_BASE_URL
-  : 'http://127.0.0.1:3900' // 'https://api.devhubapp.com'
+  : 'https://api.devhubapp.com'
 export const GRAPHQL_ENDPOINT = `${API_BASE_URL}/graphql`
 export const DEVHUB_LINKS = {
   DOWNLOAD_PAGE: `${LANDING_BASE_URL}/download`,

@@ -6,7 +6,7 @@ export const setToken = (token) => {
 
 const subscription1 = {
   "id":"/search/issues?q=user:steedos is:issue sort:updated-desc",
-  "type":"issue_or_pr",
+  "type":"steedos_object",
   "subtype":"ISSUES",
   "params":{ 
     "owners":{ 
@@ -22,7 +22,7 @@ const subscription1 = {
 
 const column1 = {
   "id":"column1",
-  "type":"issue_or_pr",
+  "type":"steedos_object",
   "options":{ 
     "enableAppIconUnreadIndicator":true
   },

@@ -522,6 +522,70 @@ function* onFetchRequest(
           : reponseContainOldest
           ? false
           : undefined
+    } else if (subscription && subscription.type === 'steedos_object') {
+      const response = yield call(
+        getIssuesOrPullRequests,
+        subscription.subtype,
+        subscriptionParams as IssueOrPullRequestColumnSubscription['params'],
+        requestParams,
+        { subscriptionId, githubToken },
+      )
+      headers = (response && response.headers) || {}
+
+      const prevItems = subscription.data.items || []
+      const newItems = (response.data || []) as GitHubIssueOrPullRequest[]
+      const mergedItems = mergeIssuesOrPullRequestsPreservingEnhancement(
+        newItems,
+        prevItems,
+        { dropPrevItems: replaceAllItems },
+      )
+
+      const olderDateFromThisResponse = getOlderIssueOrPullRequestDate(newItems)
+      const olderItemDate = getOlderIssueOrPullRequestDate(mergedItems)
+
+      if (!issuesOrPullRequestsCache) {
+        issuesOrPullRequestsCache = createIssuesOrPullRequestsCache(prevItems)
+      }
+
+      const enhancementMap = yield call(
+        getIssueOrPullRequestsEnhancementMap,
+        mergedItems,
+        {
+          cache: issuesOrPullRequestsCache,
+          getGitHubInstallationTokenForRepo: (
+            ownerName: string | undefined,
+            repoName: string | undefined,
+          ) =>
+            selectors.installationTokenByRepoSelector(
+              state,
+              ownerName,
+              repoName,
+            ),
+          githubOAuthToken,
+        },
+      )
+
+      const enhancedItems = enhanceIssueOrPullRequests(
+        newItems,
+        enhancementMap,
+        prevItems,
+      )
+
+      data = enhancedItems
+
+      const reponseContainOldest =
+        !olderItemDate ||
+        (!!olderDateFromThisResponse &&
+          olderDateFromThisResponse <= olderItemDate)
+
+      canFetchMore =
+        newItems.length >= perPage
+          ? reponseContainOldest
+            ? true
+            : undefined
+          : reponseContainOldest
+          ? false
+          : undefined
     } else {
       throw new Error(
         `Unknown column subscription type: ${subscription &&

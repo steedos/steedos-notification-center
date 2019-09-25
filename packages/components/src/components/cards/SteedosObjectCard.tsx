@@ -23,7 +23,7 @@ export const SteedosObjectCard = React.memo((props: SteedosObjectCardProps) => {
 
   return (
     <CardWithLink
-      type="issue_or_pr"
+      type="steedos_object"
       repoIsKnown={repoIsKnown}
       ownerIsKnown={ownerIsKnown}
       item={SteedosObject}

@@ -64,7 +64,7 @@ export const SteedosObjectColumn = React.memo(
         }
         columnId={columnId}
         columnIndex={columnIndex}
-        columnType="issue_or_pr"
+        columnType="steedos_object"
         icon={headerDetails.icon}
         owner={headerDetails.owner}
         pagingEnabled={pagingEnabled}

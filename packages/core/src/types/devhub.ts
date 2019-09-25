@@ -24,6 +24,12 @@ import {
   GitHubWatchEvent,
 } from './github'
 import { GraphQLUserPlan } from './graphql'
+import {
+  SteedosObjectColumn,
+  SteedosObjectColumnCreation,
+  SteedosObjectColumnSubscription,
+  SteedosObjectColumnSubscriptionCreation,
+} from './steedos'
 
 type octokit = InstanceType<typeof Octokit>
 
@@ -276,6 +282,7 @@ export type ColumnSubscription =
   | ActivityColumnSubscription
   | IssueOrPullRequestColumnSubscription
   | NotificationColumnSubscription
+  | SteedosObjectColumnSubscription
 
 export interface BaseColumn {
   id: string
@@ -309,12 +316,14 @@ export type Column =
   | ActivityColumn
   | IssueOrPullRequestColumn
   | NotificationColumn
+  | SteedosObjectColumn
 
 export type GenericColumnCreation<
   ColumnType extends
     | ActivityColumn
     | IssueOrPullRequestColumn
     | NotificationColumn
+    | SteedosObjectColumn
 > = Omit<ColumnType, 'createdAt' | 'updatedAt'> & {
   createdAt?: string
   updatedAt?: string
@@ -332,12 +341,14 @@ export type ColumnCreation =
   | ActivityColumnCreation
   | IssueOrPullRequestColumnCreation
   | NotificationColumnCreation
+  | SteedosObjectColumnCreation
 
 export type GenericColumnSubscriptionCreation<
   ColumnSubscriptionType extends
     | ActivityColumnSubscription
     | IssueOrPullRequestColumnSubscription
     | NotificationColumnSubscription
+    | SteedosObjectColumnSubscription
 > = Omit<ColumnSubscriptionType, 'id' | 'data' | 'createdAt' | 'updatedAt'> & {
   id?: string | undefined
   data?: ColumnSubscriptionType['data'] | undefined
@@ -359,6 +370,7 @@ export type ColumnSubscriptionCreation =
   | ActivityColumnSubscriptionCreation
   | IssueOrPullRequestColumnSubscriptionCreation
   | NotificationColumnSubscriptionCreation
+  | SteedosObjectColumnSubscriptionCreation
 
 export type ColumnParamField = 'all' | 'org' | 'owner' | 'repo' | 'username'
 

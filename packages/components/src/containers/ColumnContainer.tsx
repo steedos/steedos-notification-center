@@ -3,6 +3,7 @@ import React from 'react'
 import { EventColumn } from '../components/columns/EventColumn'
 import { IssueOrPullRequestColumn } from '../components/columns/IssueOrPullRequestColumn'
 import { NotificationColumn } from '../components/columns/NotificationColumn'
+import { SteedosObjectColumn } from '../components/columns/SteedosObjectColumn'
 import { useColumn } from '../hooks/use-column'
 import { bugsnag } from '../libs/bugsnag'
 
@@ -50,6 +51,19 @@ export const ColumnContainer = React.memo((props: ColumnContainerProps) => {
       return (
         <NotificationColumn
           key={`notification-column-${column.id}`}
+          columnId={column.id}
+          columnIndex={columnIndex}
+          headerDetails={headerDetails}
+          pagingEnabled={pagingEnabled}
+          swipeable={swipeable}
+        />
+      )
+    }
+
+    case 'steedos_object': {
+      return (
+        <SteedosObjectColumn
+          key={`steedos-object-column-${column.id}`}
           columnId={column.id}
           columnIndex={columnIndex}
           headerDetails={headerDetails}
