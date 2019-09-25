@@ -56,7 +56,7 @@ const github = {
     "scope":[ 
 
     ],
-    "token":"3f0d696566493d18ee2c591538f862a779db4a42",
+    "token":"",
     "tokenType":"bearer",
     "tokenCreatedAt":"2019-09-21T10:55:32.406Z"
   },
@@ -65,7 +65,7 @@ const github = {
       "notifications",
       "user:email"
     ],
-    "token":"fbb4fe2abad39ac4cc9231abbb9960ff4f38efff",
+    "token":"",
     "tokenType":"bearer",
     "tokenCreatedAt":"2019-09-21T10:55:33.796Z"
   },
@@ -118,7 +118,7 @@ export const me = {
 }
 
 export const login = {
-  appToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI1ZDg0YmMzZGU0YmMyOTAwMTdkOTRiNTciLCJnaXRodWJMb2dpbiI6InN0ZWVkb3MtcHJpdmF0ZSIsImFwcCI6eyJzY29wZSI6W10sInRva2VuIjoiM2YwZDY5NjU2NjQ5M2QxOGVlMmM1OTE1MzhmODYyYTc3OWRiNGE0MiIsInRva2VuQ3JlYXRlZEF0IjoiMjAxOS0wOS0yMVQxMDo1NTozMi40MDZaIiwidG9rZW5UeXBlIjoiYmVhcmVyIiwibG9naW4iOiJzdGVlZG9zLWFwcHMifSwib2F1dGgiOnsic2NvcGUiOlsibm90aWZpY2F0aW9ucyIsInVzZXI6ZW1haWwiXSwidG9rZW4iOiJmYmI0ZmUyYWJhZDM5YWM0Y2M5MjMxYWJiYjk5NjBmZjRmMzhlZmZmIiwidG9rZW5DcmVhdGVkQXQiOiIyMDE5LTA5LTIxVDEwOjU1OjMzLjc5NloiLCJ0b2tlblR5cGUiOiJiZWFyZXIiLCJsb2dpbiI6InN0ZWVkb3MtYXBwcyJ9LCJpYXQiOjE1NjkzMDM0NjUsImV4cCI6MTU3MTg5NTQ2NX0.DzvNn_hJOZrdnJhT__QShpXl2JADYg-1IUp2YthQWxw",
+  appToken: "",
   user: me
 }
 
