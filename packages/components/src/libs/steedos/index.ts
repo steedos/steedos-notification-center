@@ -1,4 +1,6 @@
 import { SteedosObjectColumnSubscription } from '@devhub/core'
+import { select } from 'redux-saga/effects'
+import * as selectors from '../../redux/selectors'
 
 export function authenticate(token: string | null) {
   try {
@@ -18,6 +20,7 @@ export async function getSteedosObject<
   T extends SteedosObjectColumnSubscription['subtype']
 >(
   type: T,
+  subscription: any,
   subscriptionParams: SteedosObjectColumnSubscription['params'],
   { githubToken = '', subscriptionId = '', useCache = true } = {},
 ) {
@@ -28,7 +31,8 @@ export async function getSteedosObject<
   ])
   const cacheValue = cache[cacheKey]
   const url =
-    'http://127.0.0.1:5000/api/odata/v4/51ae9b1a8e296a29c9000001/' +
+    subscription.serverUrl +
+    '/api/odata/v4/51ae9b1a8e296a29c9000001/' +
     type +
     '?$top=50'
 
@@ -44,7 +48,7 @@ export async function getSteedosObject<
 
     value.forEach((element: any) => {
       element.id = element._id
-      element.html_url = 'http://127.0.0.1:5000/'
+      element.html_url = 'subscription.serverUrl'
       element.title = element.name
       element.updated_at = element.modified
       element.created_at = element.created

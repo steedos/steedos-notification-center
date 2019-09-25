@@ -11,29 +11,37 @@ const subscriptionItems = [{
   "id":"/search/contracts?q=user:steedos is:issue sort:updated-desc",
   "type":"steedos_object",
   "subtype":"contracts",
+  "objectLabel": "合同",
   "createdAt":"2019-09-20T13:20:48.665Z",
-  "updatedAt":"2019-09-20T14:40:48.665Z"
+  "updatedAt":new Date().toISOString(),
+  "serverUrl": process.env.STEEDOS_URL
 }, {
   "columnId": "accounts",
   "id":"/search/accounts?q=user:steedos is:issue sort:updated-desc",
   "type":"steedos_object",
   "subtype":"accounts",
+  "objectLabel": "单位",
   "createdAt":"2019-09-20T13:20:48.665Z",
-  "updatedAt":"2019-09-20T14:38:48.665Z"
+  "updatedAt":"2019-09-20T14:38:48.665Z",
+  "serverUrl": process.env.STEEDOS_URL
 }, {
   "columnId": "contacts",
   "id":"/search/contacts?q=user:steedos is:issue sort:updated-desc",
   "type":"steedos_object",
   "subtype":"contacts",
+  "objectLabel": "联系人",
   "createdAt":"2019-09-20T13:20:48.665Z",
-  "updatedAt":"2019-09-20T14:38:48.665Z"
+  "updatedAt":"2019-09-20T14:38:48.665Z",
+  "serverUrl": process.env.STEEDOS_URL
 }, {
   "columnId": "instances",
   "id":"/search/instances?q=user:steedos is:issue sort:updated-desc",
   "type":"steedos_object",
   "subtype":"instances",
+  "objectLabel": "审批",
   "createdAt":"2019-09-20T13:20:48.665Z",
-  "updatedAt":"2019-09-20T14:38:48.665Z"
+  "updatedAt":"2019-09-20T14:38:48.665Z",
+  "serverUrl": process.env.STEEDOS_URL
 }]
 
 const columns = {
@@ -49,8 +57,10 @@ const subscriptions = {
 
 _.each(subscriptionItems, (sub)=>{
   const column = {
-    "id": sub.id,
+    "id": sub.columnId,
     "type": sub.type,
+    "objectName": sub.columnId,
+    "objectLabel": sub.objectLabel,
     "options":{ 
       "enableAppIconUnreadIndicator":true
     },
@@ -61,7 +71,7 @@ _.each(subscriptionItems, (sub)=>{
       sub.id
     ],
     "createdAt": sub.createdAt,
-    "updatedAt": sub.updatedAt
+    "updatedAt": sub.updatedAt,
   }
   columns.byId[sub.columnId] = column
   subscriptions.byId[sub.id] = sub

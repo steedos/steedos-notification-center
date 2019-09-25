@@ -531,6 +531,7 @@ function* onFetchRequest(
       const response = yield call(
         getSteedosObject,
         subscription.subtype,
+        subscription,
         subscriptionParams as SteedosObjectColumnSubscription['params'],
         { subscriptionId, githubToken },
       )
