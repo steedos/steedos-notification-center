@@ -5,11 +5,17 @@ const router = express.Router()
 const GITHUB_OAUTH_CLIENT_ID = process.env.GITHUB_OAUTH_CLIENT_ID
 const GITHUB_OAUTH_CLIENT_SECRET = process.env.GITHUB_OAUTH_CLIENT_SECRET
 let ROOT_URL = process.env.ROOT_URL
+const STEEDOS_URL = process.env.STEEDOS_URL
 import { setToken } from './data'
 
-if (!GITHUB_OAUTH_CLIENT_ID || !GITHUB_OAUTH_CLIENT_SECRET || !ROOT_URL)
+if (
+  !GITHUB_OAUTH_CLIENT_ID ||
+  !GITHUB_OAUTH_CLIENT_SECRET ||
+  !ROOT_URL ||
+  !STEEDOS_URL
+)
   throw new Error(
-    'Missing required environment variables: ROOT_URL, GITHUB_OAUTH_CLIENT_ID, GITHUB_OAUTH_CLIENT_SECRET',
+    'Missing required environment variables: ROOT_URL, STEEDOS_URL, GITHUB_OAUTH_CLIENT_ID, GITHUB_OAUTH_CLIENT_SECRET',
   )
 
 if (!ROOT_URL.endsWith('/')) ROOT_URL = ROOT_URL + '/'
