@@ -35,6 +35,7 @@
     "postinstall": "opencollective-postinstall",
     "prepare": "yarn patch-package",
     "studio": "yarn workspace @devhub/mobile studio",
+    "server": "yarn workspace @devhub/server start",
     "xcode": "yarn workspace @devhub/mobile xcode"
   },
   "dependencies": {
