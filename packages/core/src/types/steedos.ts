@@ -4,6 +4,8 @@ import {
   ColumnSubscriptionData,
   GenericColumnCreation,
   GenericColumnSubscriptionCreation,
+  ReadUnreadEnhancement,
+  SaveForLaterEnhancement,
 } from './devhub'
 
 export interface SteedosUser {
@@ -91,8 +93,6 @@ export interface SteedosObject {
   repository_url: string // https://api.github.com/repos/devhubapp/devhub
 }
 
-export type EnhancedSteedosObject = SteedosObject
-
 export type SteedosObjectSubjectType = 'Issue' | 'PullRequest' // Object Name
 
 export interface SteedosObjectColumnFilters extends BaseColumnFilters {
@@ -118,7 +118,7 @@ export type SteedosObjectColumnCreation = GenericColumnCreation<
 export interface SteedosObjectColumnSubscription {
   id: string
   type: SteedosObjectColumn['type']
-  subtype: 'ISSUES' | 'PULLS' | undefined
+  subtype: string
   params: {
     owners?: SteedosObjectColumnFilters['owners']
     involves?: SteedosObjectColumnFilters['involves']
@@ -135,3 +135,14 @@ export interface SteedosObjectColumnSubscription {
 export type SteedosObjectColumnSubscriptionCreation = GenericColumnSubscriptionCreation<
   SteedosObjectColumnSubscription
 >
+
+export interface SteedosObjectPayloadEnhancement
+  extends ReadUnreadEnhancement,
+    SaveForLaterEnhancement {
+  merged?: undefined
+  private?: boolean
+  enhanced?: boolean
+}
+
+export type EnhancedSteedosObject = SteedosObject &
+  SteedosObjectPayloadEnhancement

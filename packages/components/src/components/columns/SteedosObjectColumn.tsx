@@ -32,7 +32,7 @@ export const SteedosObjectColumn = React.memo(
     const Children = useMemo<ColumnRendererProps['children']>(
       () => (
         <SteedosObjectCardsContainer
-          key={`issue-or-pr-cards-container-${columnId}`}
+          key={`steedos-object-cards-container-${columnId}`}
           columnId={columnId}
           columnIndex={columnIndex}
           ownerIsKnown={!!(headerDetails && headerDetails.ownerIsKnown)}
@@ -55,7 +55,7 @@ export const SteedosObjectColumn = React.memo(
 
     return (
       <ColumnRenderer
-        key={`issue-or-pr-column-${columnId}-inner`}
+        key={`steedos-object-column-${columnId}-inner`}
         avatarImageURL={
           headerDetails.avatarProps && headerDetails.avatarProps.imageURL
         }

@@ -27,6 +27,7 @@ import {
   ItemFilterCountMetadata,
   ItemsFilterMetadata,
   NotificationColumnSubscription,
+  SteedosObjectColumnSubscription,
   ThemeColors,
   UserPlan,
 } from '../../types'
@@ -765,6 +766,18 @@ export function getColumnHeaderDetails(
       }
     }
 
+    case 'steedos_object': {
+      const s = subscription as Partial<SteedosObjectColumnSubscription>
+
+      return {
+        icon: 'bell',
+        ownerIsKnown: false,
+        repoIsKnown: false,
+        subtitle: 'subtitle',
+        title: s.subtype ? s.subtype : 'Steedos',
+      }
+    }
+
     default: {
       console.error(
         `Invalid column type: '${column && (column as any).type}'.`,
@@ -1284,6 +1297,10 @@ export function getFilteredItems(
       filters,
       { plan },
     )
+  }
+
+  if (type === 'steedos_object') {
+    return items as EnhancedGitHubNotification[]
   }
 
   console.error(`Not filtered. Unhandled subscription type: ${type}`)

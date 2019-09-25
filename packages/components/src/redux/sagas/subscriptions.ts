@@ -23,6 +23,7 @@ import {
   enhanceIssueOrPullRequests,
   EnhancementCache,
   enhanceNotifications,
+  enhanceSteedosObjects,
   getDefaultPaginationPerPage,
   getGitHubAPIHeadersFromHeader,
   getIssueOrPullRequestsEnhancementMap,
@@ -39,6 +40,9 @@ import {
   mergeEventsPreservingEnhancement,
   mergeIssuesOrPullRequestsPreservingEnhancement,
   mergeNotificationsPreservingEnhancement,
+  mergeSteedosObjectsPreservingEnhancement,
+  SteedosObject,
+  SteedosObjectColumnSubscription,
 } from '@devhub/core'
 
 import { AppState, InteractionManager } from 'react-native'
@@ -51,6 +55,7 @@ import {
   getNotifications,
   octokit,
 } from '../../libs/github'
+import { getSteedosObject } from '../../libs/steedos'
 import * as actions from '../actions'
 import * as selectors from '../selectors'
 import { ExtractActionFromActionCreator } from '../types/base'
@@ -524,17 +529,16 @@ function* onFetchRequest(
           : undefined
     } else if (subscription && subscription.type === 'steedos_object') {
       const response = yield call(
-        getIssuesOrPullRequests,
+        getSteedosObject,
         subscription.subtype,
-        subscriptionParams as IssueOrPullRequestColumnSubscription['params'],
-        requestParams,
+        subscriptionParams as SteedosObjectColumnSubscription['params'],
         { subscriptionId, githubToken },
       )
       headers = (response && response.headers) || {}
 
       const prevItems = subscription.data.items || []
-      const newItems = (response.data || []) as GitHubIssueOrPullRequest[]
-      const mergedItems = mergeIssuesOrPullRequestsPreservingEnhancement(
+      const newItems = (response.data || []) as SteedosObject[]
+      const mergedItems = mergeSteedosObjectsPreservingEnhancement(
         newItems,
         prevItems,
         { dropPrevItems: replaceAllItems },
@@ -565,7 +569,7 @@ function* onFetchRequest(
         },
       )
 
-      const enhancedItems = enhanceIssueOrPullRequests(
+      const enhancedItems = enhanceSteedosObjects(
         newItems,
         enhancementMap,
         prevItems,

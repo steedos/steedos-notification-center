@@ -1,60 +1,71 @@
+import * as _ from 'lodash';
+
 let appToken = "appToken"
 
 export const setToken = (token) => {
   appToken = token;
 } 
 
-const subscription1 = {
-  "id":"/search/issues?q=user:steedos is:issue sort:updated-desc",
+const subscriptionItems = [{
+  "columnId": "contracts",
+  "id":"/search/contracts?q=user:steedos is:issue sort:updated-desc",
   "type":"steedos_object",
-  "subtype":"ISSUES",
-  "params":{ 
-    "owners":{ 
-      "steedos":{ 
-        "value":true
-      }
-    },
-    "subjectType":"Issue"
-  },
+  "subtype":"contracts",
+  "createdAt":"2019-09-20T13:20:48.665Z",
+  "updatedAt":"2019-09-20T14:40:48.665Z"
+}, {
+  "columnId": "accounts",
+  "id":"/search/accounts?q=user:steedos is:issue sort:updated-desc",
+  "type":"steedos_object",
+  "subtype":"accounts",
   "createdAt":"2019-09-20T13:20:48.665Z",
   "updatedAt":"2019-09-20T14:38:48.665Z"
-}
-
-const column1 = {
-  "id":"column1",
+}, {
+  "columnId": "contacts",
+  "id":"/search/contacts?q=user:steedos is:issue sort:updated-desc",
   "type":"steedos_object",
-  "options":{ 
-    "enableAppIconUnreadIndicator":true
-  },
-  "filters":{ 
-    "subjectTypes":{ 
-      "Issue":true
-    },
-    "owners":{ 
-      "steedos":{ 
-        "value":true
-      }
-    },
-    "clearedAt":"2019-09-23T13:54:26.553Z"
-  },
-  "subscriptionIds":[ 
-    subscription1.id
-  ],
-  "createdAt":"2019-09-20T13:20:48.664Z",
-  "updatedAt":"2019-09-20T14:38:48.664Z"
+  "subtype":"contacts",
+  "createdAt":"2019-09-20T13:20:48.665Z",
+  "updatedAt":"2019-09-20T14:38:48.665Z"
+}, {
+  "columnId": "instances",
+  "id":"/search/instances?q=user:steedos is:issue sort:updated-desc",
+  "type":"steedos_object",
+  "subtype":"instances",
+  "createdAt":"2019-09-20T13:20:48.665Z",
+  "updatedAt":"2019-09-20T14:38:48.665Z"
+}]
+
+const columns = {
+  allIds: _.map(subscriptionItems, 'columnId'),
+  byId: {},
+  updatedAt: subscriptionItems[0].updatedAt
+}
+const subscriptions = {
+  allIds: _.map(subscriptionItems, 'id'),
+  byId: {},
+  updatedAt: subscriptionItems[0].updatedAt
 }
 
-const columns = {}
-columns.allIds = [column1.id]
-columns.byId = {}
-columns.byId[column1.id] = column1
-columns.updatedAt = column1.updatedAt
-
-const subscriptions = {}
-subscriptions.allIds = [subscription1.id]
-subscriptions.byId = {}
-subscriptions.byId[subscription1.id] = subscription1
-subscriptions.updatedAt = subscription1.updatedAt
+_.each(subscriptionItems, (sub)=>{
+  const column = {
+    "id": sub.id,
+    "type": sub.type,
+    "options":{ 
+      "enableAppIconUnreadIndicator":true
+    },
+    "filters":{ 
+      "clearedAt":"2019-09-23T13:54:26.553Z"
+    },
+    "subscriptionIds":[ 
+      sub.id
+    ],
+    "createdAt": sub.createdAt,
+    "updatedAt": sub.updatedAt
+  }
+  columns.byId[sub.columnId] = column
+  subscriptions.byId[sub.id] = sub
+})
 
 const github = () => { 
   return {

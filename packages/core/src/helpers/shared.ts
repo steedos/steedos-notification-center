@@ -918,6 +918,10 @@ export function getItemsFromSubscriptions(subscriptions: ColumnSubscription[]) {
     return sortNotifications(items as EnhancedGitHubNotification[])
   }
 
+  if (subscriptions[0] && subscriptions[0]!.type === 'steedos_object') {
+    return items as EnhancedGitHubNotification[]
+  }
+
   console.error(`Unhandled subscription type: ${subscriptions[0]!.type}`)
   return items
 }
