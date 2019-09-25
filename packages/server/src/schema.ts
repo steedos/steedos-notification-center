@@ -1,43 +1,36 @@
 import { GraphQLObjectType } from 'graphql'
-import { GraphQLJSON } from 'graphql-type-json'
+import {
+  IExecutableSchemaDefinition,
+  makeExecutableSchema,
+} from 'graphql-tools'
+import { GraphQLJSON, GraphQLJSONObject } from 'graphql-type-json'
 
 import { login, me } from './data'
 
-export const queryAuth = {
-  type: GraphQLJSON,
-  args: {
-    login: {
-      type: GraphQLJSON,
-    },
-  },
-  async resolve(source, args, context, info) {
-    return { login }
-  },
-}
+const schemaConfig = `
+  scalar JSON
+  scalar JSONObject
 
-export const queryMe = {
-  type: GraphQLJSON,
-  async resolve(source, args, context, info) {
-    return me
-  },
-}
+  type RootQuery {
+    login: JSONObject,
+    me: JSONObject
+  }
+  schema {
+    query: RootQuery
+  }
+`
 
-export const queryConfig = {
-  name: 'RootQueryType',
-  fields: {
-    auth: queryAuth,
-    me: queryMe,
+const schemaResolvers = {
+  RootQuery: {
+    login: (r: any, a: { [key: string]: any }, ctx: any) => login(),
+    me: (r: any, a: { [key: string]: any }, ctx: any) => me(),
   },
 }
 
-export const mutationConfig = {
-  name: 'MutationRootType',
-  fields: {},
-}
+const schema = makeExecutableSchema({
+  typeDefs: schemaConfig,
+  resolvers: schemaResolvers,
+  resolverValidationOptions: { requireResolversForResolveType: false },
+})
 
-const schemaConfig = {
-  query: new GraphQLObjectType(queryConfig),
-  // mutation: new GraphQLObjectType(mutationConfig)
-}
-
-export default schemaConfig
+export default schema

@@ -5,6 +5,7 @@ const router = express.Router()
 const GITHUB_OAUTH_CLIENT_ID = process.env.GITHUB_OAUTH_CLIENT_ID
 const GITHUB_OAUTH_CLIENT_SECRET = process.env.GITHUB_OAUTH_CLIENT_SECRET
 let ROOT_URL = process.env.ROOT_URL
+import { setToken } from './data'
 
 if (!GITHUB_OAUTH_CLIENT_ID || !GITHUB_OAUTH_CLIENT_SECRET || !ROOT_URL)
   throw new Error(
@@ -40,8 +41,9 @@ router.get(
       code,
       { grant_type: 'client_credentials' },
       (e: any, accessToken: string, refreshToken: string, results: any) => {
+        setToken(accessToken)
         const data = {
-          app_token: 'to_be_generate',
+          app_token: accessToken,
           github_token: accessToken,
         }
         res.end(

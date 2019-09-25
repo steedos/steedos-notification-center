@@ -6,17 +6,14 @@ import * as cors from 'cors'
 import * as express from 'express'
 
 import * as graphqlHTTP from 'express-graphql'
-import { GraphQLSchema } from 'graphql'
 
 import oauthRouter from './oauth'
-import schemaConfig from './schema'
+import schema from './schema'
 
 const app = express()
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(cors())
-
-export const schema = new GraphQLSchema(schemaConfig)
 
 app.use(
   '/graphql',

@@ -1,3 +1,8 @@
+let appToken = "appToken"
+
+export const setToken = (token) => {
+  appToken = token;
+} 
 
 const subscription1 = {
   "id":"/search/issues?q=user:steedos is:issue sort:updated-desc",
@@ -51,30 +56,32 @@ subscriptions.byId = {}
 subscriptions.byId[subscription1.id] = subscription1
 subscriptions.updatedAt = subscription1.updatedAt
 
-const github = { 
-  "app":{ 
-    "scope":[ 
-
-    ],
-    "token":"",
-    "tokenType":"bearer",
-    "tokenCreatedAt":"2019-09-21T10:55:32.406Z"
-  },
-  "oauth":{ 
-    "scope":[ 
-      "notifications",
-      "user:email"
-    ],
-    "token":"",
-    "tokenType":"bearer",
-    "tokenCreatedAt":"2019-09-21T10:55:33.796Z"
-  },
-  "user":{ 
-    "id":"55586035",
-    "nodeId":"MDQ6VXNlcjU1NTg2MDM1",
-    "login":"steedos-private",
-    "name":"Jack Zhuang",
-    "avatarUrl":"https://avatars3.githubusercontent.com/u/55586035?v=4"
+const github = () => { 
+  return {
+    "app":{ 
+      "scope":[ 
+  
+      ],
+      "token": appToken,
+      "tokenType":"bearer",
+      "tokenCreatedAt":"2019-09-21T10:55:32.406Z"
+    },
+    "oauth":{ 
+      "scope":[ 
+        "notifications",
+        "user:email"
+      ],
+      "token": appToken,
+      "tokenType":"bearer",
+      "tokenCreatedAt":"2019-09-21T10:55:33.796Z"
+    },
+    "user":{ 
+      "id":"55586035",
+      "nodeId":"MDQ6VXNlcjU1NTg2MDM1",
+      "login":"steedos-private",
+      "name":"Jack Zhuang",
+      "avatarUrl":"https://avatars3.githubusercontent.com/u/55586035?v=4"
+    }
   }
 }
 
@@ -106,19 +113,23 @@ export const plan = {
   "updatedAt":"2019-09-20T11:47:09.644Z"
 }
 
-export const me = {
-  _id: "5d84bc3de4bc290017d94b57",
-  columns: columns,
-  subscriptions: subscriptions,
-  github: github,
-  plan: plan,
-  createdAt: "2019-09-20T11:47:09.644Z",
-  updatedAt: "2019-09-24T06:37:44.974Z",
-  lastLoginAt: "2019-09-24T05:37:44.937Z"
+export const me = () => {
+  return {
+    _id: "5d84bc3de4bc290017d94b57",
+    columns: columns,
+    subscriptions: subscriptions,
+    github: github(),
+    plan: plan,
+    createdAt: "2019-09-20T11:47:09.644Z",
+    updatedAt: "2019-09-24T06:37:44.974Z",
+    lastLoginAt: "2019-09-24T05:37:44.937Z"
+  }
 }
 
-export const login = {
-  appToken: "",
-  user: me
+export const login = () => {
+  return {
+    appToken: appToken,
+    user: me()
+  }
 }
 
