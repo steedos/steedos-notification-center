@@ -1,6 +1,0 @@
-{
-  "extends": ["../../tslint.json"],
-  "rules": {
-      "no-console": [false, "debug", "dir", "log", "trace", "warn"]
-  }
-}

@@ -30,15 +30,12 @@ export async function getSteedosObject<
     subscriptionId,
   ])
   const cacheValue = cache[cacheKey]
-  const url =
-    subscription.serverUrl +
-    '/api/odata/v4/51ae9b1a8e296a29c9000001/' +
-    type +
-    '?$top=50'
+  const url = subscription.serverUrl + '/api/v4/' + type + '?$top=50'
 
   try {
     const response = await fetch(url, {
       credentials: 'include',
+      mode: 'cors',
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
