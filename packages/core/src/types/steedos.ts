@@ -127,6 +127,7 @@ export interface SteedosObjectColumnSubscription {
     draft?: SteedosObjectColumnFilters['draft']
     query?: string
   }
+  object?: any
   data: ColumnSubscriptionData<any>
   createdAt: string
   updatedAt: string

@@ -81,7 +81,7 @@ export const SteedosObjectCards = React.memo(
       safeAreaInsets,
       visibleItemIndexesRef,
     } = useCardsProps({
-      type: 'issue_or_pr',
+      type: 'steedos_object',
       repoIsKnown,
       refresh,
       ownerIsKnown,
@@ -100,7 +100,7 @@ export const SteedosObjectCards = React.memo(
           : items,
       ownerIsKnown,
       repoIsKnown,
-      type: 'issue_or_pr',
+      type: 'steedos_object',
       visibleItemIndexesRef,
     })
 
@@ -112,7 +112,7 @@ export const SteedosObjectCards = React.memo(
           return (
             <View style={{ height }}>
               <SwipeableCard
-                type="issue_or_pr"
+                type="steedos_object"
                 cachedCardProps={cachedCardProps}
                 columnId={column.id}
                 item={item}

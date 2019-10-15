@@ -767,12 +767,15 @@ export function getColumnHeaderDetails(
     }
 
     case 'steedos_object': {
+      const s = subscription as Partial<SteedosObjectColumnSubscription>
+
+      const object = s.object
       return {
         icon: 'bell',
         ownerIsKnown: false,
         repoIsKnown: false,
-        subtitle: (column && (column as any).objectName) || '',
-        title: (column && (column as any).objectLabel) || '',
+        subtitle: (s.object && s.object.name) || '',
+        title: (s.object && s.object.label) || '',
       }
     }
 

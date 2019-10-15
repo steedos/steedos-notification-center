@@ -1,4 +1,4 @@
-import { SteedosObjectColumnSubscription } from '@devhub/core'
+import { constants, SteedosObjectColumnSubscription } from '@devhub/core'
 import { select } from 'redux-saga/effects'
 import * as selectors from '../../redux/selectors'
 
@@ -30,7 +30,7 @@ export async function getSteedosObject<
     subscriptionId,
   ])
   const cacheValue = cache[cacheKey]
-  const url = subscription.serverUrl + '/api/v4/' + type + '?$top=50'
+  const url = constants.API_BASE_URL + '/api/v4/' + type + '?$top=50'
 
   try {
     const response = await fetch(url, {
@@ -45,7 +45,8 @@ export async function getSteedosObject<
 
     value.forEach((element: any) => {
       element.id = element._id
-      element.html_url = 'subscription.serverUrl'
+      element.html_url =
+        constants.API_BASE_URL + '/app/devhub/' + type + '/view/' + element._id
       element.title = element.name
       element.updated_at = element.modified
       element.created_at = element.created

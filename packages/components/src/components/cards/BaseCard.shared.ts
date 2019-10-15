@@ -46,6 +46,7 @@ import {
   trimNewLinesAndSpaces,
   UserPlan,
 } from '@devhub/core'
+import { EnhancedSteedosObject } from '@devhub/core/dist/types/steedos'
 import * as actions from '../../redux/actions'
 import { ExtractActionFromActionCreator } from '../../redux/types/base'
 import {
@@ -764,7 +765,7 @@ function _getCardPropsForItem(
     }
 
     case 'steedos_object': {
-      const issueOrPullRequest = item as EnhancedGitHubIssueOrPullRequest
+      const steedosObject: any = item as EnhancedSteedosObject
       const {
         canSee,
         iconDetails,
@@ -772,34 +773,17 @@ function _getCardPropsForItem(
         isRead,
         repoFullName,
         repoOwnerName,
-      } = getGitHubIssueOrPullRequestSubItems(issueOrPullRequest, { plan })
+      } = getGitHubIssueOrPullRequestSubItems(steedosObject, { plan })
 
-      const avatar: BaseCardProps['avatar'] = ownerIsKnown
-        ? {
-            imageURL: getUserAvatarFromObject(
-              issueOrPullRequest.user,
-              {},
-              PixelRatio.getPixelSizeForLayoutSize,
-            )!,
-            linkURL: getUserURLFromObject(issueOrPullRequest.user)!,
-          }
-        : {
-            imageURL: getUserAvatarByUsername(
-              repoOwnerName || '',
-              {
-                baseURL: getBaseUrlFromOtherUrl(
-                  issueOrPullRequest.html_url || issueOrPullRequest.url,
-                ),
-              },
-              PixelRatio.getPixelSizeForLayoutSize,
-            ),
-            linkURL: getRepoUrlFromOtherUrl(
-              issueOrPullRequest.html_url || issueOrPullRequest.url,
-            )!,
-          }
+      const avatar: BaseCardProps['avatar'] = {
+        imageURL: constants.API_BASE_URL + '/avatar/' + steedosObject.owner,
+        linkURL:
+          constants.API_BASE_URL +
+          '/app/devhub/users/view/' +
+          steedosObject.owner,
+      }
 
-      const date =
-        issueOrPullRequest.updated_at || issueOrPullRequest.created_at
+      const date = steedosObject.updated_at || steedosObject.created_at
 
       const icon = { name: iconDetails.icon, color: iconDetails.color }
 
@@ -818,9 +802,9 @@ function _getCardPropsForItem(
         icon,
         id,
         isRead,
-        link: fixURL(issueOrPullRequest.html_url, {
-          addBottomAnchor: issueOrPullRequest.comments > 0,
-          issueOrPullRequestNumber: issueOrPullRequest.number,
+        link: fixURL(steedosObject.html_url, {
+          addBottomAnchor: steedosObject.comments > 0,
+          issueOrPullRequestNumber: steedosObject.number,
         })!,
         showPrivateLock: isPrivate,
         subitems: undefined,
@@ -829,9 +813,9 @@ function _getCardPropsForItem(
           repoFullName,
           ownerIsKnown,
           repoIsKnown,
-          issueOrPullRequestNumber: issueOrPullRequest.number,
+          issueOrPullRequestNumber: steedosObject.number,
         }),
-        title: issueOrPullRequest.title,
+        title: steedosObject.title,
         type,
       }
     }
